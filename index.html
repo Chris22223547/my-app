@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>West Built Door Builder</title>
+    <link rel="stylesheet" href="styles.css?v=scroll-restored" />
+  </head>
+  <body>
+    <aside class="rail" aria-label="Main navigation">
+      <div class="logo"><span>west</span>built</div>
+      <a class="rail-link active" href="#"><span>⌂</span>Home</a>
+      <a class="rail-link" href="#"><span>▤</span>Quotes</a>
+      <a class="rail-link" href="#"><span>▦</span>Orders</a>
+    </aside>
+
+    <main class="builder">
+      <header class="toolbar">
+        <div class="toolbar-left">
+          <button class="tool" title="Back" aria-label="Back">‹</button>
+          <button class="tool" title="Save" aria-label="Save">▣</button>
+          <button class="tool" title="Add" aria-label="Add">+</button>
+          <button class="tool" title="Copy" aria-label="Copy">▣▣</button>
+          <button class="tool" title="Print" aria-label="Print" id="printBtn">▥</button>
+          <button class="tool" title="Settings" aria-label="Settings">⚙</button>
+        </div>
+        <div class="view-tabs" aria-label="View tabs">
+          <button class="view-tab active" type="button" id="builderTab">Builder</button>
+          <button class="view-tab" type="button" id="quoteTab">Print PDF</button>
+        </div>
+        <div class="toolbar-right">
+          <button class="tool notice" title="Notifications" aria-label="Notifications">◖</button>
+          <button class="tool" title="Settings" aria-label="Settings">⚙</button>
+          <button class="tool" title="Help" aria-label="Help">?</button>
+          <button class="tool" title="Account" aria-label="Account">♙</button>
+        </div>
+      </header>
+
+      <section class="canvas" id="builderView">
+        <div class="config-column" aria-label="Door configuration">
+          <article class="accordion open" data-section="system">
+            <button class="accordion-head" type="button">
+              <span id="systemHeading">Door System (Single Door)</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <input id="systemType" type="hidden" value="single" />
+              <div class="system-label">System</div>
+              <div class="system-picker" aria-label="Door system choices">
+                <button class="system-card selected" type="button" data-system="single" aria-label="Single Door">
+                  <img src="https://fibercraft.indikor.com/assets/builder/content/configurations/door-1.png" alt="" />
+                  <span class="check-circle">✓</span>
+                </button>
+                <button class="system-card" type="button" data-system="single-left-sidelite" aria-label="Single Door with Left Sidelite">
+                  <img src="https://fibercraft.indikor.com/assets/builder/content/configurations/door-2.png" alt="" />
+                  <span class="check-circle">✓</span>
+                </button>
+                <button class="system-card" type="button" data-system="single-right-sidelite" aria-label="Single Door with Right Sidelite">
+                  <img src="https://fibercraft.indikor.com/assets/builder/content/configurations/door-3.png" alt="" />
+                  <span class="check-circle">✓</span>
+                </button>
+                <button class="system-card" type="button" data-system="single-two-sidelite" aria-label="Single Door with Two Sidelites">
+                  <img src="https://fibercraft.indikor.com/assets/builder/content/configurations/door-4.png" alt="" />
+                  <span class="check-circle">✓</span>
+                </button>
+                <button class="system-card" type="button" data-system="double" aria-label="Double Door">
+                  <img src="https://fibercraft.indikor.com/assets/builder/content/configurations/door-5.png" alt="" />
+                  <span class="check-circle">✓</span>
+                </button>
+                <button class="system-card" type="button" data-system="double-left-sidelite" aria-label="Double Door with Left Sidelite">
+                  <img src="https://fibercraft.indikor.com/assets/builder/content/configurations/door-6.png" alt="" />
+                  <span class="check-circle">✓</span>
+                </button>
+                <button class="system-card" type="button" data-system="double-right-sidelite" aria-label="Double Door with Right Sidelite">
+                  <img src="https://fibercraft.indikor.com/assets/builder/content/configurations/door-7.png" alt="" />
+                  <span class="check-circle">✓</span>
+                </button>
+                <button class="system-card" type="button" data-system="double-two-sidelite" aria-label="Double Door with Two Sidelites">
+                  <img src="https://fibercraft.indikor.com/assets/builder/content/configurations/door-8.png" alt="" />
+                  <span class="check-circle">✓</span>
+                </button>
+              </div>
+              <div class="system-scroll">
+                <button type="button" id="systemScrollLeft" aria-label="Scroll systems left">‹</button>
+                <div class="system-track"><span id="systemThumb"></span></div>
+                <button type="button" id="systemScrollRight" aria-label="Scroll systems right">›</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="accordion" data-section="frame">
+            <button class="accordion-head" type="button">
+              <span>Frame</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <div class="frame-form">
+                <label class="outline-field frame-option">
+                  <span>Frame O</span>
+                  <select id="frameOption">
+                    <option value="smooth-composite" selected>Smooth Composite</option>
+                    <option value="woodgrain-composite">Woodgrain Composite</option>
+                  </select>
+                </label>
+
+                <label class="outline-field finish-row-1">
+                  <span>Slab</span>
+                  <select id="frameWidth">
+                    <option value="30">30&quot;</option>
+                    <option value="32" selected>32&quot;</option>
+                    <option value="34">34&quot;</option>
+                    <option value="36">36&quot;</option>
+                    <option value="42">42&quot;</option>
+                  </select>
+                </label>
+
+                <label class="outline-field">
+                  <span>Height</span>
+                  <select id="frameHeight">
+                    <option value="81.875" selected>6'8&quot;</option>
+                    <option value="83.875">7'</option>
+                    <option value="97.875">8'</option>
+                  </select>
+                </label>
+
+                <label class="outline-field">
+                  <span>Frame Width</span>
+                  <input id="frameWidthDisplay" type="text" value="33 1/2&quot;" readonly />
+                </label>
+
+                <label class="outline-field editable-frame-height" title="Double-click to enter a custom frame height">
+                  <span>Frame Height</span>
+                  <input id="frameHeightDisplay" type="text" value="81 7/8&quot;" readonly />
+                </label>
+
+                <label class="outline-field">
+                  <span>Frame D</span>
+                  <select id="jambDepth">
+                    <option value="4.625" selected>4 5/8&quot;</option>
+                    <option value="6.625">6 5/8&quot;</option>
+                    <option value="7.25">7 1/4&quot;</option>
+                  </select>
+                </label>
+
+                <label class="outline-field">
+                  <span>Swing</span>
+                  <select id="swingType">
+                    <option value="inswing" selected>Inswing</option>
+                    <option value="outswing">Outswing</option>
+                  </select>
+                </label>
+
+                <label class="outline-field">
+                  <span>Hinges</span>
+                  <select id="handing">
+                    <option value="left" selected>Left</option>
+                    <option value="right">Right</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </article>
+
+          <article class="accordion" data-section="transom">
+            <button class="accordion-head" type="button">
+              <span>Transom</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <div class="field-grid">
+                <label class="check-row"><input id="transom" type="checkbox" /> Add transom</label>
+                <label>
+                  Transom Height
+                  <input id="transomHeight" type="text" value="10&quot;" />
+                </label>
+              </div>
+            </div>
+          </article>
+
+          <article class="accordion" data-section="sill">
+            <button class="accordion-head" type="button">
+              <span>Sill</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <input id="sill" type="hidden" value="black" />
+              <div class="fixed-value">
+                <span>Sill</span>
+                <strong>Black Anodized</strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="accordion" data-section="brickmould">
+            <button class="accordion-head" type="button">
+              <span>Brickmould</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <label class="check-row"><input id="brickmould" type="checkbox" checked /> Include brickmould</label>
+            </div>
+          </article>
+
+          <article class="accordion open" data-section="panel">
+            <button class="accordion-head" type="button">
+              <span id="panelHeading">Door Panel (Richardson's 6 Panel)</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <input id="panelStyle" type="hidden" value="richersons-6-panel-sg68" />
+              <label class="outline-field panel-filter">
+                <span>Panel Type</span>
+                <select id="grainFilter">
+                  <option value="smooth" selected>Smooth</option>
+                  <option value="steel">Steel</option>
+                  <option value="woodgrain">Woodgrain</option>
+                </select>
+              </label>
+              <div class="panel-picker" aria-label="Door panel choices">
+                <button class="panel-card selected" type="button" data-panel-type="smooth" data-panel="richersons-6-panel-sg68" data-name="Richardson's 6 Panel">
+                  <img src="assets/smooth-panels/6-panel-sg68.png" alt="" />
+                  <strong>Richardson's 6 Panel</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="smooth" data-panel="richersons-flush-sg00" data-name="Richardson's Flush">
+                  <img src="assets/smooth-panels/flush-sg00.png" alt="" />
+                  <strong>Richardson's Flush</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="smooth" data-panel="richersons-4-panel-flush-top-sg46" data-name="Richardson's 4 Panel - Flush Top">
+                  <img src="assets/smooth-panels/4-panel-flush-top-sg46.png" alt="" />
+                  <strong>Richardson's 4 Panel - Flush Top</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="smooth" data-panel="richersons-4-panel-3-quarter-lite-sg49" data-name="Richardson's 4 Panel - 3/4 Lite">
+                  <img src="assets/smooth-panels/4-panel-3-quarter-lite-sg49.png" alt="" />
+                  <strong>Richardson's 4 Panel - 3/4 Lite</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="smooth" data-panel="richersons-2-panel-3-quarter-lite-sg25" data-name="Richardson's 2 Panel - 3/4 Lite">
+                  <img src="assets/smooth-panels/2-panel-3-quarter-lite-sg25.png" alt="" />
+                  <strong>Richardson's 2 Panel - 3/4 Lite</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="smooth" data-panel="richersons-6-panel-1-quarter-lite-sg66" data-name="Richardson's 6 Panel - 1/4 Lite">
+                  <img src="assets/smooth-panels/6-panel-1-quarter-lite-sg66.png" alt="" />
+                  <strong>Richardson's 6 Panel - 1/4 Lite</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="smooth" data-panel="richersons-2-panel-1-half-lite-sg20" data-name="Richardson's 2 Panel - 1/2 Lite">
+                  <img src="assets/smooth-panels/2-panel-1-half-lite-sg20.png" alt="" />
+                  <strong>Richardson's 2 Panel - 1/2 Lite</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="smooth" data-panel="trimlite-two-panel-shaker" data-name="Trimlite Two-Panel Shaker">
+                  <img src="assets/smooth-panels/trimlite-two-panel-shaker.png" alt="" />
+                  <strong>Trimlite Two-Panel Shaker</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="smooth" data-panel="trimlite-one-panel-shaker" data-name="Trimlite One-Panel Shaker">
+                  <img src="assets/smooth-panels/trimlite-one-panel-shaker.png" alt="" />
+                  <strong>Trimlite One-Panel Shaker</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="smooth" data-panel="trimlite-3-panel-shaker" data-name="Trimlite 3-Panel Shaker">
+                  <img src="assets/smooth-panels/trimlite-3-panel-shaker.png" alt="" />
+                  <strong>Trimlite 3-Panel Shaker</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="woodgrain" data-panel="flush" data-name="Richersons Flush" hidden>
+                  <img src="https://cdn.indikor.com/e8591c13-64bc-4c43-a8fb-af4618f73ebc" alt="" />
+                  <strong>Richersons Flush</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="woodgrain" data-panel="richersons-2-panel" data-name="Richersons 2 panel" hidden>
+                  <img src="https://cdn.indikor.com/1efcc59f-e0a0-4cb2-a346-fb65921d8c09" alt="" />
+                  <strong>Richersons 2 panel</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="woodgrain" data-panel="richersons-4-panel" data-name="Richersons 4 Panel" hidden>
+                  <img src="https://cdn.indikor.com/9f4079b9-6d35-434e-b5d0-47cee4f5d6af" alt="" />
+                  <strong>Richersons 4 Panel</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="woodgrain" data-panel="richersons-6-panel" data-name="Richersons 6 Panel" hidden>
+                  <img src="https://cdn.indikor.com/90558de8-8c07-49fb-8e0d-c10035b61da6" alt="" />
+                  <strong>Richersons 6 Panel</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="woodgrain" data-panel="craftsman" data-name="Richersons Craftsman 6 Panel" hidden>
+                  <img src="https://cdn.indikor.com/5366c8fd-c62f-4af0-bbc4-d95c1a5bd75e" alt="" />
+                  <strong>Richersons Craftsman 6 Panel</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="woodgrain" data-panel="shaker" data-name="Mastergrain Edge 1 Panel Shaker" hidden>
+                  <img src="https://cdn.indikor.com/e758af9a-b7b3-4395-bab6-4ec91d87d2f1" alt="" />
+                  <strong>Mastergrain Edge 1 Panel Shaker</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-flush" data-name="Steel Flush" hidden>
+                  <img src="assets/steel-panels/flush.png" alt="" />
+                  <strong>Flush</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-6-panel" data-name="Steel 6 Panel" hidden>
+                  <img src="assets/steel-panels/6-panel.png" alt="" />
+                  <strong>6 Panel</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-4-panel" data-name="Steel 4 Panel" hidden>
+                  <img src="assets/steel-panels/4-panel.png" alt="" />
+                  <strong>4 Panel</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-3-panel-scroll" data-name="Steel 3 Panel Scroll" hidden>
+                  <img src="assets/steel-panels/3-panel-scroll.png" alt="" />
+                  <strong>3 Panel Scroll</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-orleans" data-name="Steel Orleans" hidden>
+                  <img src="assets/steel-panels/orleans.png" alt="" />
+                  <strong>Orleans</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-london" data-name="Steel London" hidden>
+                  <img src="assets/steel-panels/london.png" alt="" />
+                  <strong>London</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-2-panel-camber-top" data-name="Steel 2 Panel Camber Top" hidden>
+                  <img src="assets/steel-panels/2-panel-camber-top.png" alt="" />
+                  <strong>2 Panel Camber Top</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-2-panel-camber-top-planked" data-name="Steel 2 Panel Camber Top Planked" hidden>
+                  <img src="assets/steel-panels/2-panel-camber-top-planked.png" alt="" />
+                  <strong>2 Panel Camber Top Planked</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-sydney" data-name="Steel Sydney" hidden>
+                  <img src="assets/steel-panels/sydney.png" alt="" />
+                  <strong>Sydney</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-victoria" data-name="Steel Victoria" hidden>
+                  <img src="assets/steel-panels/victoria.png" alt="" />
+                  <strong>Victoria</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-soho" data-name="Steel Soho" hidden>
+                  <img src="assets/steel-panels/soho.png" alt="" />
+                  <strong>Soho</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-linea" data-name="Steel Linea" hidden>
+                  <img src="assets/steel-panels/linea.png" alt="" />
+                  <strong>Linea</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-vog" data-name="Steel Vog" hidden>
+                  <img src="assets/steel-panels/vog.png" alt="" />
+                  <strong>Vog</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-oso" data-name="Steel Oso" hidden>
+                  <img src="assets/steel-panels/oso.png" alt="" />
+                  <strong>Oso</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-tao" data-name="Steel Tao" hidden>
+                  <img src="assets/steel-panels/tao.png" alt="" />
+                  <strong>Tao</strong>
+                </button>
+                <button class="panel-card" type="button" data-panel-type="steel" data-panel="steel-era" data-name="Steel Era" hidden>
+                  <img src="assets/steel-panels/era.png" alt="" />
+                  <strong>Era</strong>
+                </button>
+              </div>
+              <div class="panel-scroll">
+                <button type="button" id="panelScrollLeft" aria-label="Scroll panels left">‹</button>
+                <div class="panel-track"><span id="panelThumb"></span></div>
+                <button type="button" id="panelScrollRight" aria-label="Scroll panels right">›</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="accordion open" data-section="lite">
+            <button class="accordion-head" type="button">
+              <span>Door Lite</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <label>
+                Lite
+                <select id="doorLite">
+                  <option value="" selected>Select door lite...</option>
+                  <option value="fusion">Fusion</option>
+                  <option value="trim-lite">Trimlite</option>
+                  <option value="custom">Custom</option>
+                  <option value="none">No Door Light</option>
+                </select>
+              </label>
+            </div>
+          </article>
+
+          <article class="accordion open" data-section="finish">
+            <button class="accordion-head" type="button">
+              <span>Finish</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <div class="finish-form">
+                <label class="outline-field">
+                  <span>Exterior Panel</span>
+                  <select id="exteriorFinishType">
+                    <option value="unfinished" selected>Unfinished</option>
+                    <option value="paint">Paint</option>
+                    <option value="stain">Stain</option>
+                  </select>
+                </label>
+                <label class="outline-field finish-color-field finish-row-1" data-finish-color-for="exteriorFinishType">
+                  <span>Color</span>
+                  <select id="finish"></select>
+                  <button type="button" class="clear-finish" data-target="finish" aria-label="Clear exterior finish">×</button>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="outline-field finish-row-2">
+                  <span>Exterior Frame</span>
+                  <select id="exteriorFrameFinishType">
+                    <option value="unfinished" selected>Unfinished</option>
+                    <option value="paint">Paint</option>
+                    <option value="stain">Stain</option>
+                  </select>
+                </label>
+                <label class="outline-field finish-color-field finish-row-2" data-finish-color-for="exteriorFrameFinishType">
+                  <span>Color</span>
+                  <select id="exteriorFrameFinish"></select>
+                  <button type="button" class="clear-finish" data-target="exteriorFrameFinish" aria-label="Clear exterior frame finish">×</button>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="outline-field finish-row-3">
+                  <span>Interior Panel</span>
+                  <select id="interiorFinishType">
+                    <option value="unfinished" selected>Unfinished</option>
+                    <option value="paint">Paint</option>
+                    <option value="stain">Stain</option>
+                  </select>
+                </label>
+                <label class="outline-field finish-color-field finish-row-3" data-finish-color-for="interiorFinishType">
+                  <span>Color</span>
+                  <select id="interiorFinish"></select>
+                  <button type="button" class="clear-finish" data-target="interiorFinish" aria-label="Clear interior finish">×</button>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="outline-field finish-row-4">
+                  <span>Interior Frame</span>
+                  <select id="interiorFrameFinishType">
+                    <option value="unfinished" selected>Unfinished</option>
+                    <option value="paint">Paint</option>
+                    <option value="stain">Stain</option>
+                  </select>
+                </label>
+                <label class="outline-field finish-color-field finish-row-4" data-finish-color-for="interiorFrameFinishType">
+                  <span>Color</span>
+                  <select id="interiorFrameFinish"></select>
+                  <button type="button" class="clear-finish" data-target="interiorFrameFinish" aria-label="Clear interior frame finish">×</button>
+                  <small>A selection needs to be made.</small>
+                </label>
+              </div>
+            </div>
+          </article>
+
+          <article class="accordion" data-section="hardware">
+            <button class="accordion-head" type="button">
+              <span>Hardware</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <div class="field-grid">
+                <label class="required-field">
+                  Hinges
+                  <select id="hardware">
+                    <option value="">Select hinges...</option>
+                    <option value="black">Black</option>
+                    <option value="satin-nickel">Satin Nickel</option>
+                  </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field">
+                  Handle
+                  <select id="handleSet">
+                    <option value="">Select handle...</option>
+                    <option value="deadbolt-passage">Deadbolt and Passage</option>
+                    <option value="grip-set">Grip Set</option>
+                    <option value="multipoint">Multipoint</option>
+                  </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="deadboltPassageField" hidden>
+                  Deadbolt and Passage Style
+                  <select id="deadboltPassageStyle">
+                    <option value="">Select style...</option>
+                    <option value="square-lever-deadbolt-square-rosette">Square lever and deadbolt with square rosette</option>
+                    <option value="tube-lever-deadbolt-square-rosette">Tube lever and deadbolt with square rosette</option>
+                    <option value="contemporary-knob-deadbolt-square-rosette">Contemporary knob with deadbolt and square rosette</option>
+                  </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="gripSetField" hidden>
+                  Grip Set Style
+                  <select id="gripSetStyle">
+                    <option value="">Select style...</option>
+                    <option value="la-jolla">La Jolla</option>
+                    <option value="santa-cruz">Santa Cruz</option>
+                    <option value="seattle">Seattle</option>
+                  </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="gripSetTrimField" hidden>
+                  Grip Set Handle
+                  <select id="gripSetTrim">
+                    <option value="">Select handle...</option>
+                    <option value="square-lever">Square lever</option>
+                    <option value="tube-lever">Tube lever</option>
+                    <option value="temporary-knob">Temporary knob</option>
+                  </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="multipointSizeField" hidden>
+                  Multipoint Size
+                  <select id="multipointSize">
+                    <option value="">Select size...</option>
+                    <option value="1-5x11">1 1/2&quot; x 11&quot;</option>
+                    <option value="2x10">2&quot; x 10&quot;</option>
+                    <option value="2-5x17">2 1/2&quot; x 17&quot;</option>
+                  </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="multipointLeverField" hidden>
+                  Lever
+                  <select id="multipointLever">
+                    <option value="">Select lever...</option>
+                    <option value="athena">Athena</option>
+                    <option value="helios">Helios</option>
+                    <option value="hercules">Hercules</option>
+                  </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+              </div>
+            </div>
+          </article>
+
+          <article class="accordion" data-section="items">
+            <button class="accordion-head" type="button">
+              <span>Additional Items</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <label class="check-row"><input id="install" type="checkbox" /> Installation package</label>
+            </div>
+          </article>
+
+          <article class="accordion" data-section="notes">
+            <button class="accordion-head" type="button">
+              <span>Notes</span>
+              <span>⌄</span>
+            </button>
+            <div class="accordion-body">
+              <textarea id="notes" rows="4" placeholder="Add quote notes..."></textarea>
+            </div>
+          </article>
+        </div>
+
+        <aside class="preview-column" aria-label="Door preview">
+          <div class="preview-head">
+            <h1>View From Outside**</h1>
+            <div class="estimate">
+              <span>Estimated Total*</span>
+              <button id="priceButton" type="button">$3,400.00</button>
+            </div>
+          </div>
+
+          <div class="drawing-area">
+            <div class="front-view">
+              <div class="door-system" id="doorSystem">
+                <div class="transom-lite" id="transomLite"></div>
+                <div class="sidelite" id="sidelite"></div>
+                <div class="door-face" id="doorFace">
+                  <img class="door-panel-art" id="doorPanelArt" src="assets/smooth-panels/6-panel-sg68.png" alt="" />
+                  <div class="finish-overlay" id="finishOverlay"></div>
+                  <div class="glass none" id="glass"></div>
+                  <div class="panel-lines" id="panelLines"></div>
+                  <div class="handle" id="handle"></div>
+                </div>
+              </div>
+              <div class="height-line"><span id="heightLabel">81 7/8&quot;</span></div>
+              <div class="width-label" id="widthLabel">37 3/4&quot;</div>
+            </div>
+
+            <div class="top-view">
+              <h2>Top View</h2>
+              <p>Interior</p>
+              <div class="top-sketch">
+                <div class="jamb"></div>
+                <div class="swing" id="swing"></div>
+                <span id="depthLabel">4 5/8&quot;</span>
+              </div>
+              <p>Exterior</p>
+            </div>
+          </div>
+
+          <div class="price-breakdown" id="priceBreakdown" hidden>
+            <div><span>Base system</span><strong id="basePrice">$3,200.00</strong></div>
+            <div><span>Selected options</span><strong id="optionPrice">$200.00</strong></div>
+            <div><span>Estimated total</span><strong id="breakdownTotal">$3,400.00</strong></div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="quote-view" id="quoteView" hidden>
+        <div class="quote-sheet">
+          <header class="quote-header">
+            <div class="quote-company">
+              <h2>West Windows &amp; Doors</h2>
+              <p>2462 Industrial St Unit 1<br />Burlington ON<br />(905) 335-3751</p>
+            </div>
+            <div class="quote-title">
+              <h1>Quote</h1>
+              <p><strong>Quote Number:</strong> <span id="quoteNumber">1430081</span></p>
+              <p><strong>Reference:</strong> <span id="quoteReference"></span></p>
+              <p><strong>Date:</strong> <span id="quoteDate"></span></p>
+            </div>
+          </header>
+
+          <div class="quote-body">
+            <div class="quote-details">
+              <h3>System</h3>
+              <p id="quoteSystem"></p>
+              <p id="quoteSwing"></p>
+
+              <h3>Frame</h3>
+              <p id="quoteFrame"></p>
+
+              <h3>Sill</h3>
+              <p id="quoteSill"></p>
+
+              <h3>Panel</h3>
+              <p id="quotePanel"></p>
+
+              <h3>Glass Lite</h3>
+              <p id="quoteLite"></p>
+
+              <h3>Hardware</h3>
+              <p id="quoteHardware"></p>
+
+              <h3>Finish</h3>
+              <p id="quoteDoorFinish"></p>
+              <p id="quoteFrameFinish"></p>
+            </div>
+
+            <div class="quote-summary">
+              <h3>Totals</h3>
+              <div class="quote-total-row"><span>Sub-Total</span><strong id="quoteSubtotal">$3,400.00</strong></div>
+              <div class="quote-total-row"><span>HST (13%)</span><strong id="quoteTax">$442.00</strong></div>
+              <div class="quote-total-row grand"><span>Total</span><strong id="quoteTotal">$3,842.00</strong></div>
+
+              <h3>View From Outside</h3>
+              <div class="quote-front" id="quoteFrontView"></div>
+
+              <h3>Top View</h3>
+              <div class="quote-top" id="quoteTopView"></div>
+            </div>
+          </div>
+
+          <footer class="quote-footer">
+            <div>
+              <h3>Location/Notes:</h3>
+              <p><strong>Tag/Location:</strong></p>
+              <p><strong>Notes:</strong> <span id="quoteNotes"></span></p>
+            </div>
+            <div>
+              <h3>Quote Customer Details:</h3>
+              <p><strong>Reference:</strong></p>
+              <p><strong>Name:</strong></p>
+            </div>
+            <span class="quote-page">Page 1 of 1</span>
+          </footer>
+        </div>
+      </section>
+
+      <footer class="disclaimer">
+        <p>* Estimate is exclusive of discounts, taxes and other applicable fees. Tap or click on the price to see details.</p>
+        <p>** Image should not be used as an actual representation of the final product. Designs and features may be subject to alteration.</p>
+        <p>Designer and builder powered by West Built Doors.</p>
+      </footer>
+    </main>
+
+    <script src="app.js?v=scroll-restored"></script>
+  </body>
+</html>

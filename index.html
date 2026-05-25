@@ -4,39 +4,110 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>West Built Door Builder</title>
-    <link rel="stylesheet" href="styles.css?v=scroll-restored" />
+    <link rel="stylesheet" href="styles.css?v=supabase-connected-v1" />
   </head>
   <body>
-    <aside class="rail" aria-label="Main navigation">
+    <section class="login-view" id="loginView" aria-label="Login">
+      <form class="login-card" id="loginForm">
+        <div class="login-brand"><span>west</span>built</div>
+        <h1>Door Builder Login</h1>
+        <label>
+          <span>Username</span>
+          <input id="loginUsername" type="text" autocomplete="username" required />
+        </label>
+        <label>
+          <span>Password</span>
+          <input id="loginPassword" type="password" autocomplete="current-password" required />
+        </label>
+        <p class="login-error" id="loginError" hidden>Please enter a username and password.</p>
+        <button type="submit">Log In</button>
+      </form>
+    </section>
+
+    <aside class="rail auth-required" aria-label="Main navigation">
       <div class="logo"><span>west</span>built</div>
-      <a class="rail-link active" href="#"><span>⌂</span>Home</a>
-      <a class="rail-link" href="#"><span>▤</span>Quotes</a>
-      <a class="rail-link" href="#"><span>▦</span>Orders</a>
+      <a class="rail-link active" href="#" id="quotesLink"><span>▤</span>Quotes</a>
     </aside>
 
-    <main class="builder">
+    <main class="builder auth-required">
       <header class="toolbar">
         <div class="toolbar-left">
-          <button class="tool" title="Back" aria-label="Back">‹</button>
-          <button class="tool" title="Save" aria-label="Save">▣</button>
-          <button class="tool" title="Add" aria-label="Add">+</button>
-          <button class="tool" title="Copy" aria-label="Copy">▣▣</button>
-          <button class="tool" title="Print" aria-label="Print" id="printBtn">▥</button>
-          <button class="tool" title="Settings" aria-label="Settings">⚙</button>
+          <button class="tool" type="button" title="Save Quote" aria-label="Save Quote" id="saveQuoteBtn">Save</button>
+          <button class="tool" type="button" title="Print" aria-label="Print" id="printBtn">Print</button>
         </div>
         <div class="view-tabs" aria-label="View tabs">
           <button class="view-tab active" type="button" id="builderTab">Builder</button>
           <button class="view-tab" type="button" id="quoteTab">Print PDF</button>
         </div>
         <div class="toolbar-right">
-          <button class="tool notice" title="Notifications" aria-label="Notifications">◖</button>
-          <button class="tool" title="Settings" aria-label="Settings">⚙</button>
-          <button class="tool" title="Help" aria-label="Help">?</button>
-          <button class="tool" title="Account" aria-label="Account">♙</button>
+          <button class="tool logout-tool" type="button" id="logoutBtn">Log Out</button>
         </div>
       </header>
 
-      <section class="canvas" id="builderView">
+      <section class="quotes-page" id="quotesPage">
+        <div class="quotes-header">
+          <div>
+            <h1>Quotes</h1>
+            <p>Saved door quotes appear here.</p>
+          </div>
+          <button type="button" id="newQuoteBtn">New Quote</button>
+        </div>
+        <label class="quote-search">
+          <span>Search Quotes</span>
+          <input id="quoteSearch" type="search" placeholder="Search by quote number, customer, phone, email, or city..." />
+        </label>
+        <div class="quotes-list" id="quotesList"></div>
+      </section>
+
+      <section class="customer-page" id="customerPage" hidden>
+        <div class="customer-card">
+          <div class="customer-header">
+            <div>
+              <h1>Customer Information</h1>
+              <p>Enter customer details before adding a door item.</p>
+            </div>
+            <button type="button" id="addItemBtn">Add Item</button>
+          </div>
+          <div class="customer-form">
+            <label>
+              Customer Name
+              <input id="customerName" type="text" autocomplete="name" />
+            </label>
+            <label>
+              Phone Number
+              <input id="customerPhone" type="tel" autocomplete="tel" />
+            </label>
+            <label>
+              Address
+              <input id="customerAddress" type="text" autocomplete="street-address" />
+            </label>
+            <label>
+              Email
+              <input id="customerEmail" type="email" autocomplete="email" />
+            </label>
+            <label>
+              City
+              <input id="customerCity" type="text" autocomplete="address-level2" />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="quote-detail-page" id="quoteDetailPage" hidden>
+        <div class="quote-detail-card">
+          <div class="quote-detail-header">
+            <div>
+              <button class="back-to-quotes" type="button" id="backToQuotesBtn">Back to Quotes</button>
+              <h1 id="detailCustomerName">Customer Quote</h1>
+              <p id="detailCustomerInfo"></p>
+            </div>
+            <button type="button" id="detailAddItemBtn">Add Item</button>
+          </div>
+          <div class="quote-items-list" id="quoteItemsList"></div>
+        </div>
+      </section>
+
+      <section class="canvas" id="builderView" hidden>
         <div class="config-column" aria-label="Door configuration">
           <article class="accordion open" data-section="system">
             <button class="accordion-head" type="button">
@@ -213,7 +284,9 @@
                 <select id="grainFilter">
                   <option value="smooth" selected>Smooth</option>
                   <option value="steel">Steel</option>
-                  <option value="woodgrain">Woodgrain</option>
+                  <option value="fir">Fir</option>
+                  <option value="mahogany">Mahogany</option>
+                  <option value="oak">Oak</option>
                 </select>
               </label>
               <div class="panel-picker" aria-label="Door panel choices">
@@ -356,20 +429,158 @@
 
           <article class="accordion open" data-section="lite">
             <button class="accordion-head" type="button">
-              <span>Door Lite</span>
+              <span id="liteHeading">Door Lite</span>
               <span>⌄</span>
             </button>
             <div class="accordion-body">
-              <label>
-                Lite
-                <select id="doorLite">
-                  <option value="" selected>Select door lite...</option>
-                  <option value="fusion">Fusion</option>
-                  <option value="trim-lite">Trimlite</option>
-                  <option value="custom">Custom</option>
-                  <option value="none">No Door Light</option>
-                </select>
-              </label>
+              <div class="field-grid">
+                <input id="liteGlassStyle" type="hidden" value="amsterdam-2-zinc" />
+                <label>
+                  Lite Collection
+                  <select id="doorLite">
+                    <option value="" selected>Select lite collection...</option>
+                    <option value="fusion">Fusion</option>
+                    <option value="trim-lite">Trimlite</option>
+                    <option value="custom">Custom Glass</option>
+                    <option value="none">No Door Light</option>
+                  </select>
+                </label>
+                <label class="conditional-field" id="liteSizeField" hidden>
+                  Lite Size
+                  <select id="liteSize">
+                    <option value="22x64" selected>22 x 64</option>
+                    <option value="7x64">7 x 64</option>
+                    <option value="22x15">22 x 15</option>
+                    <option value="22x10">22 x 10</option>
+                    <option value="22x17">22 x 17</option>
+                    <option value="22x36">22 x 36</option>
+                    <option value="22x48">22 x 48</option>
+                    <option value="22x3">22 x 3</option>
+                    <option value="8x48">8 x 48</option>
+                  </select>
+                </label>
+                <label class="conditional-field" id="liteFrameField" hidden>
+                  Lite Frame
+                  <select id="liteFrame">
+                    <option value="traditional">Traditional</option>
+                    <option value="contemporary" selected>Contemporary</option>
+                  </select>
+                </label>
+                <label class="conditional-field" id="liteOptionField" hidden>
+                  Option
+                  <select id="liteOption">
+                    <option value="low-e-clear" selected>Low-E/Clear</option>
+                  </select>
+                </label>
+                <div class="conditional-field lite-glass-gallery" id="liteGlassGalleryField" hidden>
+                  <span>Glass Style</span>
+                  <div class="lite-glass-picker" id="liteGlassPicker" role="listbox" aria-label="Door lite glass styles">
+                    <button class="lite-glass-card selected" type="button" data-style="amsterdam-2-zinc" aria-selected="true">
+                      <img src="assets/fusion-22x64/amsterdam-2-zinc.png" alt="" />
+                      <strong>Amsterdam 2 Zinc</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="antonella" aria-selected="false">
+                      <img src="assets/fusion-22x64/antonella.png" alt="" />
+                      <strong>Antonella</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="brela" aria-selected="false">
+                      <img src="assets/fusion-22x64/brela.png" alt="" />
+                      <strong>Brela</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="concord-patina" aria-selected="false">
+                      <img src="assets/fusion-22x64/concord-patina.png" alt="" />
+                      <strong>Concord Patina</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="corsica" aria-selected="false">
+                      <img src="assets/fusion-22x64/corsica.png" alt="" />
+                      <strong>Corsica</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="delano-stainless" aria-selected="false">
+                      <img src="assets/fusion-22x64/delano-stainless.png" alt="" />
+                      <strong>Delano Stainless</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="eva" aria-selected="false">
+                      <img src="assets/fusion-22x64/eva.png" alt="" />
+                      <strong>Eva</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="glacier-patina" aria-selected="false">
+                      <img src="assets/fusion-22x64/glacier-patina.png" alt="" />
+                      <strong>Glacier Patina</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="kiara-stainless" aria-selected="false">
+                      <img src="assets/fusion-22x64/kiara-stainless.png" alt="" />
+                      <strong>Kiara Stainless</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="kingston-patina" aria-selected="false">
+                      <img src="assets/fusion-22x64/kingston-patina.png" alt="" />
+                      <strong>Kingston Patina</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="lisbon-patina" aria-selected="false">
+                      <img src="assets/fusion-22x64/lisbon-patina.png" alt="" />
+                      <strong>Lisbon Patina</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="lynda" aria-selected="false">
+                      <img src="assets/fusion-22x64/lynda.png" alt="" />
+                      <strong>Lynda</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="montreux" aria-selected="false">
+                      <img src="assets/fusion-22x64/montreux.png" alt="" />
+                      <strong>Montreux</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="oak-hill-patina" aria-selected="false">
+                      <img src="assets/fusion-22x64/oak-hill-patina.png" alt="" />
+                      <strong>Oak Hill Patina</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="pine-valley-patina" aria-selected="false">
+                      <img src="assets/fusion-22x64/pine-valley-patina.png" alt="" />
+                      <strong>Pine Valley Patina</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="prague" aria-selected="false">
+                      <img src="assets/fusion-22x64/prague.png" alt="" />
+                      <strong>Prague</strong>
+                    </button>
+                    <button class="lite-glass-card" type="button" data-style="sunningdale-zinc" aria-selected="false">
+                      <img src="assets/fusion-22x64/sunningdale-zinc.png" alt="" />
+                      <strong>Sunningdale Zinc</strong>
+                    </button>
+                  </div>
+                </div>
+                <label class="conditional-field" id="glassDividersField" hidden>
+                  Glass Dividers
+                  <select id="glassDividers">
+                    <option value="none" selected>None</option>
+                    <option value="sdl">SDL</option>
+                  </select>
+                </label>
+                <label class="conditional-field" id="stlSizeField" hidden>
+                  SDL Size
+                  <select id="stlSize">
+                    <option value="one-inch-flat" selected>1&quot; Flat</option>
+                  </select>
+                </label>
+                <label class="conditional-field" id="dividerHorizontalField" hidden>
+                  Horizontal
+                  <select id="dividerHorizontal">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                  </select>
+                </label>
+                <label class="conditional-field" id="dividerVerticalField" hidden>
+                  Vertical
+                  <select id="dividerVertical">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                  </select>
+                </label>
+              </div>
             </div>
           </article>
 
@@ -386,6 +597,7 @@
                     <option value="unfinished" selected>Unfinished</option>
                     <option value="paint">Paint</option>
                     <option value="stain">Stain</option>
+                    <option value="polytex-white-standard" class="steel-finish-option" hidden>Polytex White</option>
                   </select>
                 </label>
                 <label class="outline-field finish-color-field finish-row-1" data-finish-color-for="exteriorFinishType">
@@ -400,6 +612,7 @@
                     <option value="unfinished" selected>Unfinished</option>
                     <option value="paint">Paint</option>
                     <option value="stain">Stain</option>
+                    <option value="polytex-white-standard" class="steel-finish-option" hidden>Polytex White</option>
                   </select>
                 </label>
                 <label class="outline-field finish-color-field finish-row-2" data-finish-color-for="exteriorFrameFinishType">
@@ -407,6 +620,7 @@
                   <select id="exteriorFrameFinish"></select>
                   <button type="button" class="clear-finish" data-target="exteriorFrameFinish" aria-label="Clear exterior frame finish">×</button>
                   <small>A selection needs to be made.</small>
+                  <button type="button" class="match-exterior-finish" data-target-type="exteriorFrameFinishType" data-target-color="exteriorFrameFinish" hidden>Match Exterior</button>
                 </label>
                 <label class="outline-field finish-row-3">
                   <span>Interior Panel</span>
@@ -414,6 +628,7 @@
                     <option value="unfinished" selected>Unfinished</option>
                     <option value="paint">Paint</option>
                     <option value="stain">Stain</option>
+                    <option value="polytex-white-standard" class="steel-finish-option" hidden>Polytex White</option>
                   </select>
                 </label>
                 <label class="outline-field finish-color-field finish-row-3" data-finish-color-for="interiorFinishType">
@@ -421,6 +636,7 @@
                   <select id="interiorFinish"></select>
                   <button type="button" class="clear-finish" data-target="interiorFinish" aria-label="Clear interior finish">×</button>
                   <small>A selection needs to be made.</small>
+                  <button type="button" class="match-exterior-finish" data-target-type="interiorFinishType" data-target-color="interiorFinish" hidden>Match Exterior</button>
                 </label>
                 <label class="outline-field finish-row-4">
                   <span>Interior Frame</span>
@@ -428,6 +644,7 @@
                     <option value="unfinished" selected>Unfinished</option>
                     <option value="paint">Paint</option>
                     <option value="stain">Stain</option>
+                    <option value="polytex-white-standard" class="steel-finish-option" hidden>Polytex White</option>
                   </select>
                 </label>
                 <label class="outline-field finish-color-field finish-row-4" data-finish-color-for="interiorFrameFinishType">
@@ -435,6 +652,7 @@
                   <select id="interiorFrameFinish"></select>
                   <button type="button" class="clear-finish" data-target="interiorFrameFinish" aria-label="Clear interior frame finish">×</button>
                   <small>A selection needs to be made.</small>
+                  <button type="button" class="match-exterior-finish" data-target-type="interiorFrameFinishType" data-target-color="interiorFrameFinish" hidden>Match Exterior</button>
                 </label>
               </div>
             </div>
@@ -457,6 +675,21 @@
                   <small>A selection needs to be made.</small>
                 </label>
                 <label class="required-field">
+                  Hardware Finish
+                  <select id="hardwareFinish">
+                    <option value="">Select hardware finish...</option>
+                    <option value="black">Black</option>
+                    <option value="satin-nickel">Satin Nickel</option>
+                    <option value="split-finish">Split Finish</option>
+                  </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="hardwareSplitFinishField" hidden>
+                  Split Finish
+                  <input id="hardwareSplitFinish" type="text" placeholder="Enter split finish..." />
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field">
                   Handle
                   <select id="handleSet">
                     <option value="">Select handle...</option>
@@ -473,6 +706,24 @@
                     <option value="square-lever-deadbolt-square-rosette">Square lever and deadbolt with square rosette</option>
                     <option value="tube-lever-deadbolt-square-rosette">Tube lever and deadbolt with square rosette</option>
                     <option value="contemporary-knob-deadbolt-square-rosette">Contemporary knob with deadbolt and square rosette</option>
+                    <option value="baldwin-keypad-key-no-z-wave-lever">Baldwin keypad with Key (no z wave)+ lever</option>
+                    <option value="baldwin-keypad-key-with-z-wave-lever">Baldwin keypad with Key (with z wave)+ lever</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="deadboltPassageOtherField" hidden>
+                  Other Deadbolt and Passage Style
+                  <input id="deadboltPassageOther" type="text" placeholder="Enter style..." />
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="deadboltLeverStyleField" hidden>
+                  Lever Style
+                  <select id="deadboltLeverStyle">
+                    <option value="">Select lever style...</option>
+                    <option value="square-lever">Square lever</option>
+                    <option value="tube-lever">Tube lever</option>
+                    <option value="contemporary-knob">Contemporary knob</option>
                   </select>
                   <small>A selection needs to be made.</small>
                 </label>
@@ -483,7 +734,15 @@
                     <option value="la-jolla">La Jolla</option>
                     <option value="santa-cruz">Santa Cruz</option>
                     <option value="seattle">Seattle</option>
+                    <option value="baldwin-keypad-key-no-z-wave-lajolla-bottom">Baldwin keypad with Key (no z wave)+ lajolla bottom</option>
+                    <option value="baldwin-keypad-key-with-z-wave-lajolla-bottom">Baldwin keypad with Key (with z wave)+ lajolla bottom</option>
+                    <option value="other">Other</option>
                   </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="gripSetStyleOtherField" hidden>
+                  Other Grip Set Style
+                  <input id="gripSetStyleOther" type="text" placeholder="Enter grip set style..." />
                   <small>A selection needs to be made.</small>
                 </label>
                 <label class="required-field conditional-field" id="gripSetTrimField" hidden>
@@ -492,8 +751,14 @@
                     <option value="">Select handle...</option>
                     <option value="square-lever">Square lever</option>
                     <option value="tube-lever">Tube lever</option>
-                    <option value="temporary-knob">Temporary knob</option>
+                    <option value="contemporary-knob">Contemporary knob</option>
+                    <option value="other">Other</option>
                   </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="gripSetTrimOtherField" hidden>
+                  Other Grip Set Handle
+                  <input id="gripSetTrimOther" type="text" placeholder="Enter handle..." />
                   <small>A selection needs to be made.</small>
                 </label>
                 <label class="required-field conditional-field" id="multipointSizeField" hidden>
@@ -503,7 +768,13 @@
                     <option value="1-5x11">1 1/2&quot; x 11&quot;</option>
                     <option value="2x10">2&quot; x 10&quot;</option>
                     <option value="2-5x17">2 1/2&quot; x 17&quot;</option>
+                    <option value="other">Other</option>
                   </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="multipointSizeOtherField" hidden>
+                  Other Multipoint Size
+                  <input id="multipointSizeOther" type="text" placeholder="Enter size..." />
                   <small>A selection needs to be made.</small>
                 </label>
                 <label class="required-field conditional-field" id="multipointLeverField" hidden>
@@ -513,7 +784,13 @@
                     <option value="athena">Athena</option>
                     <option value="helios">Helios</option>
                     <option value="hercules">Hercules</option>
+                    <option value="other">Other</option>
                   </select>
+                  <small>A selection needs to be made.</small>
+                </label>
+                <label class="required-field conditional-field" id="multipointLeverOtherField" hidden>
+                  Other Lever
+                  <input id="multipointLeverOther" type="text" placeholder="Enter lever..." />
                   <small>A selection needs to be made.</small>
                 </label>
               </div>
@@ -588,6 +865,12 @@
       </section>
 
       <section class="quote-view" id="quoteView" hidden>
+        <div class="print-preview-actions">
+          <button type="button" id="printWithPricingBtn">Print Now With Pricing</button>
+          <button type="button" id="printNoPricingBtn">Print Now No Pricing</button>
+          <button type="button" id="savePdfBtn">Save to Computer With Pricing</button>
+          <button type="button" id="savePdfNoPricingBtn">Save to Computer No Pricing</button>
+        </div>
         <div class="quote-sheet">
           <header class="quote-header">
             <div class="quote-company">
@@ -624,35 +907,42 @@
               <p id="quoteHardware"></p>
 
               <h3>Finish</h3>
-              <p id="quoteDoorFinish"></p>
-              <p id="quoteFrameFinish"></p>
-            </div>
+              <p id="quoteExteriorPanelFinish"></p>
+              <p id="quoteExteriorFrameFinish"></p>
+              <p id="quoteInteriorPanelFinish"></p>
+              <p id="quoteInteriorFrameFinish"></p>
 
-            <div class="quote-summary">
-              <h3>Totals</h3>
+              <h3 class="quote-pricing">Totals</h3>
               <div class="quote-total-row"><span>Sub-Total</span><strong id="quoteSubtotal">$3,400.00</strong></div>
               <div class="quote-total-row"><span>HST (13%)</span><strong id="quoteTax">$442.00</strong></div>
               <div class="quote-total-row grand"><span>Total</span><strong id="quoteTotal">$3,842.00</strong></div>
+            </div>
 
+            <div class="quote-summary">
               <h3>View From Outside</h3>
               <div class="quote-front" id="quoteFrontView"></div>
 
               <h3>Top View</h3>
               <div class="quote-top" id="quoteTopView"></div>
+
+              <div class="quote-notes">
+                <h3>Location/Notes:</h3>
+                <p><strong>Tag/Location:</strong></p>
+                <p><strong>Notes:</strong> <span id="quoteNotes"></span></p>
+              </div>
+
+              <div class="quote-customer">
+                <h3>Quote Customer Details:</h3>
+                <p><strong>Name:</strong> <span id="quoteCustomerName"></span></p>
+                <p><strong>Phone:</strong> <span id="quoteCustomerPhone"></span></p>
+                <p><strong>Email:</strong> <span id="quoteCustomerEmail"></span></p>
+                <p><strong>Address:</strong> <span id="quoteCustomerAddress"></span></p>
+                <p><strong>City:</strong> <span id="quoteCustomerCity"></span></p>
+              </div>
             </div>
           </div>
 
           <footer class="quote-footer">
-            <div>
-              <h3>Location/Notes:</h3>
-              <p><strong>Tag/Location:</strong></p>
-              <p><strong>Notes:</strong> <span id="quoteNotes"></span></p>
-            </div>
-            <div>
-              <h3>Quote Customer Details:</h3>
-              <p><strong>Reference:</strong></p>
-              <p><strong>Name:</strong></p>
-            </div>
             <span class="quote-page">Page 1 of 1</span>
           </footer>
         </div>
@@ -665,6 +955,7 @@
       </footer>
     </main>
 
-    <script src="app.js?v=scroll-restored"></script>
+    <script src="supabase-config.js?v=supabase-connected-v1"></script>
+    <script src="app.js?v=supabase-connected-v1"></script>
   </body>
 </html>

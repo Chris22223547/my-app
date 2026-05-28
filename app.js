@@ -58,7 +58,7 @@ const prices = {
   interiorFrameFinish: {},
   interiorFrameFinishType: { unfinished: 0, paint: 120, stain: 220 },
   sill: { standard: 0, adjustable: 180, black: 260 },
-  hardware: { black: 165, "satin-nickel": 130 },
+  hardware: { black: 0, "satin-nickel": 0, "black-self-closing": 0, "satin-nickel-self-closing": 0 },
   handleSet: { "deadbolt-passage": 210, "grip-set": 390, multipoint: 520 },
   deadboltPassageStyle: {
     "square-lever-deadbolt-square-rosette": 0,
@@ -492,10 +492,10 @@ const currency = new Intl.NumberFormat("en-US", {
 const savedQuotesKey = "westBuiltDoorBuilderQuotes";
 const customerFields = ["customerName", "customerPhone", "customerAddress", "customerEmail", "customerCity"];
 const validUsers = {
-  chris: { password: "chris123", name: "Chris" },
-  bruce: { password: "bruce123", name: "Bruce" },
-  jeff: { password: "jeff123", name: "Jeff" },
-  ralph: { password: "ralph123", name: "Ralph" },
+  chris: { password: "chris123", name: "Chris", email: "chris@westwindows.on.ca" },
+  bruce: { password: "bruce123", name: "Bruce", email: "bruce@westwindows.on.ca" },
+  jeff: { password: "jeff123", name: "Jeff", email: "jeff@westwindows.on.ca" },
+  ralph: { password: "ralph123", name: "Ralph", email: "ralph@westwindows.on.ca" },
 };
 
 let customFrameHeight = "";
@@ -833,6 +833,7 @@ function updateDrawing() {
   const doorSystem = document.getElementById("doorSystem");
   const doorFace = document.getElementById("doorFace");
   const glass = document.getElementById("glass");
+  const glassArt = document.getElementById("glassArt");
   const panelLines = document.getElementById("panelLines");
   const doorPanelArt = document.getElementById("doorPanelArt");
   const handle = document.getElementById("handle");
@@ -864,9 +865,13 @@ function updateDrawing() {
   if (["fusion", "trim-lite"].includes(lite) && selectedFusionStyle) {
     glass.style.backgroundImage = `url('${selectedFusionStyle[2]}')`;
     glass.style.backgroundColor = "#d5d9de";
+    glassArt.src = selectedFusionStyle[2];
+    glassArt.hidden = false;
   } else {
     glass.style.backgroundImage = "";
     glass.style.backgroundColor = "";
+    glassArt.removeAttribute("src");
+    glassArt.hidden = true;
   }
 
   panelLines.classList.toggle("show", false);
@@ -1076,6 +1081,10 @@ function currentUserDisplayName() {
   return validUsers[currentUsername]?.name || "Unknown";
 }
 
+function currentUserEmail() {
+  return validUsers[currentUsername]?.email || "";
+}
+
 async function saveCurrentQuote() {
   const quotes = readSavedQuotes();
   const existingQuote = activeQuoteId ? quotes.find((item) => item.id === activeQuoteId) : null;
@@ -1271,13 +1280,14 @@ function updateQuoteSheet() {
   const handing = selectedText("handing");
   const swing = selectedText("swingType");
   const customer = customerDetails();
+  const doorMaterial = normalizedPanelType() === "steel" ? "Steel Door" : "Fiberglass Door";
 
   document.getElementById("quoteDate").textContent = new Date().toLocaleDateString("en-CA", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
-  document.getElementById("quoteSystem").textContent = `Fiberglass Door - ${labels.systemType[valueOf("systemType")]}`;
+  document.getElementById("quoteSystem").textContent = `${doorMaterial} - ${labels.systemType[valueOf("systemType")]}`;
   document.getElementById("quoteSwing").textContent = `${swing} with ${hinges} hinges on the ${handing} side.`;
   document.getElementById("quoteFrame").textContent =
     `Frame - ${selectedText("frameOption")} - ${labels.frameWidth[valueOf("frameWidth")]} x ${frameHeightLabel()} x ${labels.jambDepth[valueOf("jambDepth")]}`;
@@ -1297,6 +1307,7 @@ function updateQuoteSheet() {
   document.getElementById("quoteTax").textContent = currency.format(tax);
   document.getElementById("quoteTotal").textContent = currency.format(totals.total + tax);
   document.getElementById("quoteNotes").textContent = document.getElementById("notes").value;
+  document.getElementById("quoteUserEmail").textContent = currentUserEmail();
   document.getElementById("quoteCustomerName").textContent = customer.customerName;
   document.getElementById("quoteCustomerPhone").textContent = customer.customerPhone;
   document.getElementById("quoteCustomerEmail").textContent = customer.customerEmail;
@@ -1901,6 +1912,10 @@ async function setAuthenticated(isAuthenticated) {
   document.body.classList.toggle("authenticated", isAuthenticated);
   sessionStorage.setItem("westBuiltDoorBuilderAuthenticated", isAuthenticated ? "true" : "false");
   if (isAuthenticated) {
+    if (!validUsers[currentUsername]) {
+      currentUsername = "chris";
+      sessionStorage.setItem("westBuiltDoorBuilderUser", currentUsername);
+    }
     await loadSavedQuotes();
     updateAll();
     updateSystemScroll();
@@ -1992,6 +2007,12 @@ function safeFileName(value) {
   return `${value || "Quote"}`.replace(/[<>:"/\\|?*\x00-\x1f]/g, "-").replace(/\s+/g, " ").trim();
 }
 
+function makeCloneImagesPrintSafe(clone) {
+  clone.querySelectorAll("img").forEach((image) => {
+    if (image.src) image.setAttribute("src", image.src);
+  });
+}
+
 function jpegDataUrlToBytes(dataUrl) {
   const base64 = dataUrl.split(",")[1];
   const binary = atob(base64);
@@ -2065,6 +2086,7 @@ async function renderQuoteSheetToPdf({ includePricing = true } = {}) {
   if (!includePricing) {
     clone.querySelectorAll(".quote-pricing, .quote-total-row").forEach((element) => element.remove());
   }
+  makeCloneImagesPrintSafe(clone);
   clone.style.width = `${rect.width}px`;
   clone.style.minHeight = `${rect.height}px`;
   clone.style.margin = "0";

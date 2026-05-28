@@ -239,6 +239,7 @@ const fusionListPrices = {
     "7x64": 358,
     "22x17": 320,
     "22x14-7-16": 307,
+    "22x15": 324,
     "25x15": 324,
   },
   "glacier-patina": {
@@ -250,6 +251,7 @@ const fusionListPrices = {
     "7x64": 384,
     "22x17": 344,
     "22x14-7-16": 327,
+    "22x15": 345,
     "25x15": 345,
   },
   "concord-patina": {
@@ -261,6 +263,7 @@ const fusionListPrices = {
     "7x64": 337,
     "22x17": 279,
     "22x14-7-16": 265,
+    "22x15": 282,
     "25x15": 282,
   },
   "sunningdale-zinc": {
@@ -272,6 +275,7 @@ const fusionListPrices = {
     "7x64": 342,
     "22x17": 277,
     "22x14-7-16": 263,
+    "22x15": 277,
     "25x15": 277,
   },
   "oak-hill-patina": {
@@ -281,6 +285,9 @@ const fusionListPrices = {
     "8x48": 275,
     "22x64": 532,
   },
+};
+const fusionSizePriceAliases = {
+  "22x15": "25x15",
 };
 const fusionStylesBySize = {
   "22x64": [
@@ -751,8 +758,9 @@ function selectedDoorLitePrice() {
 
   const style = valueOf("liteGlassStyle");
   const size = valueOf("liteSize");
-  const listedPrice = fusionListPrices[style]?.[size];
-  if (!listedPrice) return 0;
+  const priceTable = fusionListPrices[style];
+  const listedPrice = priceTable?.[size] ?? priceTable?.[fusionSizePriceAliases[size]];
+  if (listedPrice == null) return 0;
   return listedPrice * 0.5 + 300;
 }
 
@@ -1173,13 +1181,15 @@ function renderSavedQuotes() {
     .map(
       (quote) => {
         const customerName = quote.customer?.customerName || quote.title || "No customer name";
-        const city = quote.customer?.customerCity ? ` - ${escapeHtml(quote.customer.customerCity)}` : "";
+        const quoteDate = quote.date ? new Date(quote.date).toLocaleDateString("en-CA") : "";
+        const quoteTotal = currency.format(quote.total || 0);
+        const createdBy = quote.createdBy || "Unknown";
         return `<article class="quote-list-item">
-        <div>
-          <h2><button class="quote-number-link" type="button" data-quote-id="${escapeHtml(quote.id)}">${escapeHtml(quote.quoteNumber)}</button> - ${escapeHtml(customerName)}</h2>
-          <p>${new Date(quote.date).toLocaleDateString("en-CA")}${city} - ${currency.format(quote.total || 0)}</p>
-          <p>Created by ${escapeHtml(quote.createdBy || "Unknown")}</p>
-        </div>
+        <button class="quote-number-link quote-row-number" type="button" data-quote-id="${escapeHtml(quote.id)}">${escapeHtml(quote.quoteNumber)}</button>
+        <span class="quote-row-name">${escapeHtml(customerName)}</span>
+        <span class="quote-row-date">${escapeHtml(quoteDate)}</span>
+        <span class="quote-row-total">${escapeHtml(quoteTotal)}</span>
+        <span class="quote-row-created">Created by ${escapeHtml(createdBy)}</span>
         <button class="quote-open" type="button" data-quote-id="${escapeHtml(quote.id)}">View</button>
       </article>`;
       },

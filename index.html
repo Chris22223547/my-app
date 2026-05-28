@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>West Built Door Builder</title>
-    <link rel="stylesheet" href="styles.css?v=supabase-connected-v1" />
+    <link rel="stylesheet" href="styles.css?v=compact-quotes-v1" />
   </head>
   <body>
     <section class="login-view" id="loginView" aria-label="Login">
@@ -671,6 +671,8 @@
                     <option value="">Select hinges...</option>
                     <option value="black">Black</option>
                     <option value="satin-nickel">Satin Nickel</option>
+                    <option value="black-self-closing">Black self-closing hinges</option>
+                    <option value="satin-nickel-self-closing">Satin nickel self-closing hinges</option>
                   </select>
                   <small>A selection needs to be made.</small>
                 </label>
@@ -835,7 +837,7 @@
                 <div class="door-face" id="doorFace">
                   <img class="door-panel-art" id="doorPanelArt" src="assets/smooth-panels/6-panel-sg68.png" alt="" />
                   <div class="finish-overlay" id="finishOverlay"></div>
-                  <div class="glass none" id="glass"></div>
+                  <div class="glass none" id="glass"><img class="glass-art" id="glassArt" alt="" /></div>
                   <div class="panel-lines" id="panelLines"></div>
                   <div class="handle" id="handle"></div>
                 </div>
@@ -875,7 +877,10 @@
           <header class="quote-header">
             <div class="quote-company">
               <h2>West Windows &amp; Doors</h2>
-              <p>2462 Industrial St Unit 1<br />Burlington ON<br />(905) 335-3751</p>
+              <p>2462 Industrial St Unit 1<br />Burlington ON<br />(905) 335-3751<br /><span id="quoteUserEmail"></span></p>
+            </div>
+            <div class="quote-logo" aria-label="West Windows and Doors logo">
+              <img src="assets/west-windows-logo.svg" alt="West Windows &amp; Doors" />
             </div>
             <div class="quote-title">
               <h1>Quote</h1>
@@ -955,7 +960,7 @@
       </footer>
     </main>
 
-    <script src="supabase-config.js?v=supabase-connected-v1"></script>
-    <script src="app.js?v=supabase-connected-v1"></script>
+    <script src="supabase-config.js?v=compact-quotes-v1"></script>
+    <script src="app.js?v=compact-quotes-v1"></script>
   </body>
 </html>

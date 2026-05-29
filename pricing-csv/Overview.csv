@@ -2,5 +2,5 @@
 "Base Price","3200"
 "Panel Surcharge","Smooth or Woodgrain/Fir/Mahogany/Oak: +200"
 "Transom","+500 when Add Transom is selected"
-"Fusion/Trimlite Glass","Final Price = (List Price x 0.5) + 300"
+"Fusion/Trimlite Glass","Final Price = (List Price x 0.5) + 360"
 "Custom Glass SDL","Squares = (Horizontal+1)*(Vertical+1); Price = Squares x 35"

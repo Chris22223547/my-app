@@ -5,7 +5,7 @@ $overview = @(
   [pscustomobject]@{ Category = "Base Price"; Rule = "3200" },
   [pscustomobject]@{ Category = "Panel Surcharge"; Rule = "Smooth or Woodgrain/Fir/Mahogany/Oak: +200" },
   [pscustomobject]@{ Category = "Transom"; Rule = "+500 when Add Transom is selected" },
-  [pscustomobject]@{ Category = "Fusion/Trimlite Glass"; Rule = "Final Price = (List Price x 0.5) + 300" },
+  [pscustomobject]@{ Category = "Fusion/Trimlite Glass"; Rule = "Final Price = (List Price x 0.5) + 360" },
   [pscustomobject]@{ Category = "Custom Glass SDL"; Rule = "Squares = (Horizontal+1)*(Vertical+1); Price = Squares x 35" }
 )
 $overview | Export-Csv -Path "$base\Overview.csv" -NoTypeInformation -Encoding UTF8
@@ -13,6 +13,7 @@ $overview | Export-Csv -Path "$base\Overview.csv" -NoTypeInformation -Encoding U
 $paint = @(
   [pscustomobject]@{ Area="Panel"; Condition="1 paint color (ext/int same or one side only)"; AddOn=224 },
   [pscustomobject]@{ Area="Panel"; Condition="2 paint colors (ext/int different)"; AddOn=449 },
+  [pscustomobject]@{ Area="Door Light Frame"; Condition="Door light selected and exterior or interior panel is painted"; AddOn=40 },
   [pscustomobject]@{ Area="Frame"; Condition="1 paint color (ext/int same or one side only)"; AddOn=139 },
   [pscustomobject]@{ Area="Frame"; Condition="2 paint colors (ext/int different)"; AddOn=231 }
 )

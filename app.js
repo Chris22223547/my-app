@@ -761,7 +761,7 @@ function selectedDoorLitePrice() {
   const priceTable = fusionListPrices[style];
   const listedPrice = priceTable?.[size] ?? priceTable?.[fusionSizePriceAliases[size]];
   if (listedPrice == null) return 0;
-  return listedPrice * 0.5 + 300;
+  return listedPrice * 0.5 + 360;
 }
 
 function glassDividerPrice() {
@@ -813,6 +813,8 @@ function paintFinishPrice() {
   if (interiorPainted && interiorColor) panelPaintColors.add(interiorColor);
   if (panelPaintColors.size === 1) total += 224;
   if (panelPaintColors.size >= 2) total += 449;
+  const hasDoorLite = Boolean(valueOf("doorLite")) && valueOf("doorLite") !== "none";
+  if (hasDoorLite && (exteriorPainted || interiorPainted)) total += 40;
 
   const framePaintColors = new Set();
   const exteriorFramePainted = valueOf("exteriorFrameFinishType") === "paint";

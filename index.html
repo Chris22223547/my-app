@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>West Built Door Builder</title>
-    <link rel="stylesheet" href="styles.css?v=compact-quotes-v1" />
+    <link rel="stylesheet" href="styles.css?v=new-item-defaults-v2" />
   </head>
   <body>
     <section class="login-view" id="loginView" aria-label="Login">
@@ -238,7 +238,7 @@
               <span>⌄</span>
             </button>
             <div class="accordion-body">
-              <div class="field-grid">
+              <div class="field-grid door-lite-grid">
                 <label class="check-row"><input id="transom" type="checkbox" /> Add transom</label>
                 <label>
                   Transom Height
@@ -606,14 +606,16 @@
                   <button type="button" class="clear-finish" data-target="finish" aria-label="Clear exterior finish">×</button>
                   <small>A selection needs to be made.</small>
                 </label>
-                <label class="outline-field finish-row-2">
+                <label class="outline-field finish-row-2 required-field">
                   <span>Exterior Frame</span>
                   <select id="exteriorFrameFinishType">
-                    <option value="unfinished" selected>Unfinished</option>
+                    <option value="" selected>Select finish...</option>
+                    <option value="unfinished">Unfinished</option>
                     <option value="paint">Paint</option>
                     <option value="stain">Stain</option>
-                    <option value="polytex-white-standard" class="steel-finish-option" hidden>Polytex White</option>
+                    <option value="polytex-white-standard" class="steel-finish-option smooth-frame-polytex-option" hidden>Polytex White</option>
                   </select>
+                  <small>A selection needs to be made.</small>
                 </label>
                 <label class="outline-field finish-color-field finish-row-2" data-finish-color-for="exteriorFrameFinishType">
                   <span>Color</span>
@@ -638,14 +640,16 @@
                   <small>A selection needs to be made.</small>
                   <button type="button" class="match-exterior-finish" data-target-type="interiorFinishType" data-target-color="interiorFinish" hidden>Match Exterior</button>
                 </label>
-                <label class="outline-field finish-row-4">
+                <label class="outline-field finish-row-4 required-field">
                   <span>Interior Frame</span>
                   <select id="interiorFrameFinishType">
-                    <option value="unfinished" selected>Unfinished</option>
+                    <option value="" selected>Select finish...</option>
+                    <option value="unfinished">Unfinished</option>
                     <option value="paint">Paint</option>
                     <option value="stain">Stain</option>
-                    <option value="polytex-white-standard" class="steel-finish-option" hidden>Polytex White</option>
+                    <option value="polytex-white-standard" class="steel-finish-option smooth-frame-polytex-option" hidden>Polytex White</option>
                   </select>
+                  <small>A selection needs to be made.</small>
                 </label>
                 <label class="outline-field finish-color-field finish-row-4" data-finish-color-for="interiorFrameFinishType">
                   <span>Color</span>
@@ -880,7 +884,7 @@
               <p>2462 Industrial St Unit 1<br />Burlington ON<br />(905) 335-3751<br /><span id="quoteUserEmail"></span></p>
             </div>
             <div class="quote-logo" aria-label="West Windows and Doors logo">
-              <img src="assets/west-windows-logo.svg" alt="West Windows &amp; Doors" />
+              <img src="assets/west-windows-logo-2.jpg" alt="West Windows &amp; Doors" />
             </div>
             <div class="quote-title">
               <h1>Quote</h1>
@@ -960,7 +964,7 @@
       </footer>
     </main>
 
-    <script src="supabase-config.js?v=compact-quotes-v1"></script>
-    <script src="app.js?v=compact-quotes-v1"></script>
+    <script src="supabase-config.js?v=new-item-defaults-v2"></script>
+    <script src="app.js?v=new-item-defaults-v2"></script>
   </body>
 </html>

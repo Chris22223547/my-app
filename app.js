@@ -807,11 +807,20 @@ function paintFinishPrice() {
 
   let total = 0;
 
-  if (exteriorPainted && interiorPainted && exteriorColor && interiorColor) {
-    total += exteriorColor === interiorColor ? 400 : 500;
-  }
+  // Paint pricing (all panel types, including steel): panel and frame are priced separately
+  const panelPaintColors = new Set();
+  if (exteriorPainted && exteriorColor) panelPaintColors.add(exteriorColor);
+  if (interiorPainted && interiorColor) panelPaintColors.add(interiorColor);
+  if (panelPaintColors.size === 1) total += 224;
+  if (panelPaintColors.size >= 2) total += 449;
 
-  if (exteriorPainted && !interiorPainted) total += 300;
+  const framePaintColors = new Set();
+  const exteriorFramePainted = valueOf("exteriorFrameFinishType") === "paint";
+  const interiorFramePainted = valueOf("interiorFrameFinishType") === "paint";
+  if (exteriorFramePainted && exteriorFrameColor) framePaintColors.add(exteriorFrameColor);
+  if (interiorFramePainted && interiorFrameColor) framePaintColors.add(interiorFrameColor);
+  if (framePaintColors.size === 1) total += 139;
+  if (framePaintColors.size >= 2) total += 231;
 
   // Panel stain pricing
   if (exteriorStained && interiorStained && exteriorColor && interiorColor) {
@@ -919,11 +928,22 @@ function renderGlassDividers(glass, horizontalCount, verticalCount) {
 }
 
 function updatePrice() {
+  if (hasIncompleteRequiredSelections()) {
+    document.getElementById("priceButton").textContent = "Estimated total is not calculated";
+    document.getElementById("basePrice").textContent = "Not calculated";
+    document.getElementById("optionPrice").textContent = "Not calculated";
+    document.getElementById("breakdownTotal").textContent = "Not calculated";
+    return;
+  }
   const totals = totalPrice();
   document.getElementById("priceButton").textContent = currency.format(totals.total);
   document.getElementById("basePrice").textContent = currency.format(totals.base);
   document.getElementById("optionPrice").textContent = currency.format(totals.options);
   document.getElementById("breakdownTotal").textContent = currency.format(totals.total);
+}
+
+function hasIncompleteRequiredSelections() {
+  return Boolean(document.querySelector(".required-field.needs-selection, .finish-color-field.needs-selection"));
 }
 
 function selectedText(id) {
@@ -1116,12 +1136,59 @@ function startNewQuote() {
   setActiveView("customer");
 }
 
+function applyNewItemDefaults() {
+  customFrameHeight = "";
+  const defaultValues = {
+    systemType: "single",
+    frameOption: "smooth-composite",
+    frameWidth: "36",
+    frameHeight: "81.875",
+    jambDepth: "4.625",
+    swingType: "inswing",
+    handing: "left",
+    grainFilter: "smooth",
+    panelStyle: "richersons-6-panel-sg68",
+    doorLite: "none",
+    exteriorFinishType: "unfinished",
+    exteriorFrameFinishType: "",
+    interiorFinishType: "unfinished",
+    interiorFrameFinishType: "",
+    hardware: "",
+    hardwareFinish: "",
+    handleSet: "",
+  };
+
+  Object.entries(defaultValues).forEach(([id, value]) => setControlValue(id, value));
+
+  ["finish", "exteriorFrameFinish", "interiorFinish", "interiorFrameFinish"].forEach((id) => setControlValue(id, ""));
+  [
+    "hardwareSplitFinish",
+    "deadboltPassageStyle",
+    "deadboltPassageOther",
+    "deadboltLeverStyle",
+    "gripSetStyle",
+    "gripSetStyleOther",
+    "gripSetTrim",
+    "gripSetTrimOther",
+    "multipointSize",
+    "multipointSizeOther",
+    "multipointLever",
+    "multipointLeverOther",
+  ].forEach((id) => setControlValue(id, ""));
+
+  setControlValue("transom", false);
+  setControlValue("transomHeight", '10"');
+  setControlValue("brickmould", true);
+
+  document.getElementById("notes").value = "";
+  updateAll();
+}
+
 function addItemForCustomer(customer) {
   activeQuoteCustomer = customer || null;
   activeQuoteId = null;
   setCustomerDetails(activeQuoteCustomer);
-  document.getElementById("notes").value = "";
-  updateQuoteSheet();
+  applyNewItemDefaults();
   setActiveView("builder");
 }
 
@@ -1283,8 +1350,9 @@ function cleanCloneIds(element) {
 }
 
 function updateQuoteSheet() {
+  const pricingReady = !hasIncompleteRequiredSelections();
   const totals = totalPrice();
-  const tax = totals.total * 0.13;
+  const tax = pricingReady ? totals.total * 0.13 : 0;
   const panelName = cardName(`.panel-card[data-panel="${valueOf("panelStyle")}"]`);
   const hinges = valueOf("hardware") ? selectedText("hardware") : "No hinge finish selected";
   const handing = selectedText("handing");
@@ -1313,9 +1381,9 @@ function updateQuoteSheet() {
     `Interior Panel - ${finishPrintDescription("interiorFinishType", "interiorFinish")}`;
   document.getElementById("quoteInteriorFrameFinish").textContent =
     `Interior Frame - ${finishPrintDescription("interiorFrameFinishType", "interiorFrameFinish")}`;
-  document.getElementById("quoteSubtotal").textContent = currency.format(totals.total);
-  document.getElementById("quoteTax").textContent = currency.format(tax);
-  document.getElementById("quoteTotal").textContent = currency.format(totals.total + tax);
+  document.getElementById("quoteSubtotal").textContent = pricingReady ? currency.format(totals.total) : "Not calculated";
+  document.getElementById("quoteTax").textContent = pricingReady ? currency.format(tax) : "Not calculated";
+  document.getElementById("quoteTotal").textContent = pricingReady ? currency.format(totals.total + tax) : "Not calculated";
   document.getElementById("quoteNotes").textContent = document.getElementById("notes").value;
   document.getElementById("quoteUserEmail").textContent = currentUserEmail();
   document.getElementById("quoteCustomerName").textContent = customer.customerName;
@@ -1575,7 +1643,13 @@ function updateHardwareFields() {
 function updateRequiredFields() {
   document.querySelectorAll(".required-field").forEach((field) => {
     const control = field.querySelector("select, input");
-    field.classList.toggle("needs-selection", !field.hidden && !control.disabled && !control.value.trim());
+    const isFrameFinishType =
+      control?.id === "exteriorFrameFinishType" || control?.id === "interiorFrameFinishType";
+    const frameNeedsSelection = isFrameFinishType && ["", "unfinished"].includes(control.value);
+    field.classList.toggle(
+      "needs-selection",
+      !field.hidden && !control.disabled && (frameNeedsSelection || !control.value.trim())
+    );
   });
 }
 
@@ -1600,6 +1674,7 @@ function updateFinishFields() {
   const isSmoothCompositeFrame = valueOf("frameOption") === "smooth-composite";
 
   document.querySelectorAll(".steel-finish-option").forEach((option) => {
+    if (option.classList.contains("smooth-frame-polytex-option")) return;
     option.hidden = !isSteelPanel;
     option.disabled = !isSteelPanel;
   });
@@ -1608,13 +1683,16 @@ function updateFinishFields() {
     const select = document.getElementById(id);
     const stainOption = select.querySelector('option[value="stain"]');
     const steelOption = select.querySelector(`option[value="${steelFinishValue}"]`);
+    const canUsePolytechWhite = isSteelPanel || isSmoothCompositeFrame;
     stainOption.hidden = isSmoothCompositeFrame;
     stainOption.disabled = isSmoothCompositeFrame;
-    steelOption.hidden = !isSteelPanel || isSmoothCompositeFrame;
-    steelOption.disabled = !isSteelPanel || isSmoothCompositeFrame;
-    if (isSmoothCompositeFrame && !["unfinished", "paint"].includes(select.value)) {
-      select.value = "unfinished";
+    steelOption.hidden = !canUsePolytechWhite;
+    steelOption.disabled = !canUsePolytechWhite;
+    if (isSmoothCompositeFrame && !["", "unfinished", "paint", steelFinishValue].includes(select.value)) {
+      select.value = "";
     }
+    const requiredField = select.closest(".required-field");
+    if (requiredField) requiredField.classList.toggle("needs-selection", ["", "unfinished"].includes(select.value));
   });
 
   ["exteriorFinishType", "interiorFinishType"].forEach((id) => {
@@ -1635,7 +1713,9 @@ function updateFinishFields() {
 
   ["exteriorFinishType", "exteriorFrameFinishType", "interiorFinishType", "interiorFrameFinishType"].forEach((id) => {
     const select = document.getElementById(id);
-    if (!isSteelPanel && select.value === steelFinishValue) select.value = "unfinished";
+    const isFrameFinish = id === "exteriorFrameFinishType" || id === "interiorFrameFinishType";
+    const allowPolytechWhite = isFrameFinish && isSmoothCompositeFrame;
+    if (!isSteelPanel && !allowPolytechWhite && select.value === steelFinishValue) select.value = "unfinished";
   });
 
   document.querySelectorAll("[data-finish-color-for]").forEach((field) => {
@@ -1976,7 +2056,8 @@ document.getElementById("quoteSearch").addEventListener("input", renderSavedQuot
 document.getElementById("newQuoteBtn").addEventListener("click", startNewQuote);
 document.getElementById("addItemBtn").addEventListener("click", () => {
   activeQuoteCustomer = customerDetails();
-  updateQuoteSheet();
+  activeQuoteId = null;
+  applyNewItemDefaults();
   setActiveView("builder");
 });
 document.getElementById("detailAddItemBtn").addEventListener("click", () => addItemForCustomer(activeQuoteCustomer));

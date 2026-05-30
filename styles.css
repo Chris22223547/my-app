@@ -241,7 +241,7 @@ button {
 
 .quote-list-item {
   display: grid;
-  grid-template-columns: 130px minmax(180px, 1fr) 96px 96px 150px auto;
+  grid-template-columns: 130px minmax(180px, 1fr) 96px 170px auto;
   gap: 12px;
   align-items: center;
   min-height: 44px;
@@ -255,7 +255,6 @@ button {
 
 .quote-row-name,
 .quote-row-date,
-.quote-row-total,
 .quote-row-created {
   min-width: 0;
   overflow: hidden;
@@ -263,8 +262,7 @@ button {
   white-space: nowrap;
 }
 
-.quote-row-name,
-.quote-row-total {
+.quote-row-name {
   font-weight: 800;
 }
 
@@ -290,7 +288,6 @@ button {
   }
 
   .quote-row-date,
-  .quote-row-total,
   .quote-row-created {
     grid-column: 2 / 3;
   }
@@ -396,7 +393,8 @@ button {
 }
 
 .quote-detail-header > button,
-.item-open {
+.item-open,
+.item-copy {
   border: 0;
   background: var(--blue);
   color: #fff;
@@ -983,6 +981,12 @@ textarea {
 
 .finish-color-field select {
   padding-right: 34px;
+}
+
+.finish-color-field .custom-finish-color {
+  width: 230px;
+  margin-top: 7px;
+  padding-right: 12px;
 }
 
 .finish-color-field small {

@@ -37,6 +37,7 @@ $paintRows = @(
   @("Panel", "1 paint color (ext/int same or one side only)", 224),
   @("Panel", "2 paint colors (ext/int different)", 449),
   @("Door Light Frame", "Door light selected and exterior or interior panel is painted", 40),
+  @("Custom Color", "Each unique custom paint or stain color name", 200),
   @("Frame", "1 paint color (ext/int same or one side only)", 139),
   @("Frame", "2 paint colors (ext/int different)", 231)
 )

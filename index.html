@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>West Built Door Builder</title>
-    <link rel="stylesheet" href="styles.css?v=github-merge-v1" />
+    <link rel="stylesheet" href="styles.css?v=unique-custom-color-v1" />
   </head>
   <body>
     <section class="login-view" id="loginView" aria-label="Login">
@@ -586,7 +586,7 @@
 
           <article class="accordion open" data-section="finish">
             <button class="accordion-head" type="button">
-              <span>Finish</span>
+              <span>Paint/Stain</span>
               <span>⌄</span>
             </button>
             <div class="accordion-body">
@@ -603,6 +603,7 @@
                 <label class="outline-field finish-color-field finish-row-1" data-finish-color-for="exteriorFinishType">
                   <span>Color</span>
                   <select id="finish"></select>
+                  <input class="custom-finish-color" id="finishCustom" type="text" placeholder="Enter custom color..." hidden />
                   <button type="button" class="clear-finish" data-target="finish" aria-label="Clear exterior finish">×</button>
                   <small>A selection needs to be made.</small>
                 </label>
@@ -620,6 +621,7 @@
                 <label class="outline-field finish-color-field finish-row-2" data-finish-color-for="exteriorFrameFinishType">
                   <span>Color</span>
                   <select id="exteriorFrameFinish"></select>
+                  <input class="custom-finish-color" id="exteriorFrameFinishCustom" type="text" placeholder="Enter custom color..." hidden />
                   <button type="button" class="clear-finish" data-target="exteriorFrameFinish" aria-label="Clear exterior frame finish">×</button>
                   <small>A selection needs to be made.</small>
                   <button type="button" class="match-exterior-finish" data-target-type="exteriorFrameFinishType" data-target-color="exteriorFrameFinish" hidden>Match Exterior</button>
@@ -636,6 +638,7 @@
                 <label class="outline-field finish-color-field finish-row-3" data-finish-color-for="interiorFinishType">
                   <span>Color</span>
                   <select id="interiorFinish"></select>
+                  <input class="custom-finish-color" id="interiorFinishCustom" type="text" placeholder="Enter custom color..." hidden />
                   <button type="button" class="clear-finish" data-target="interiorFinish" aria-label="Clear interior finish">×</button>
                   <small>A selection needs to be made.</small>
                   <button type="button" class="match-exterior-finish" data-target-type="interiorFinishType" data-target-color="interiorFinish" hidden>Match Exterior</button>
@@ -654,6 +657,7 @@
                 <label class="outline-field finish-color-field finish-row-4" data-finish-color-for="interiorFrameFinishType">
                   <span>Color</span>
                   <select id="interiorFrameFinish"></select>
+                  <input class="custom-finish-color" id="interiorFrameFinishCustom" type="text" placeholder="Enter custom color..." hidden />
                   <button type="button" class="clear-finish" data-target="interiorFrameFinish" aria-label="Clear interior frame finish">×</button>
                   <small>A selection needs to be made.</small>
                   <button type="button" class="match-exterior-finish" data-target-type="interiorFrameFinishType" data-target-color="interiorFrameFinish" hidden>Match Exterior</button>
@@ -964,7 +968,7 @@
       </footer>
     </main>
 
-    <script src="supabase-config.js?v=github-merge-v1"></script>
-    <script src="app.js?v=github-merge-v1"></script>
+    <script src="supabase-config.js?v=unique-custom-color-v1"></script>
+    <script src="app.js?v=unique-custom-color-v1"></script>
   </body>
 </html>

@@ -14,6 +14,7 @@ $paint = @(
   [pscustomobject]@{ Area="Panel"; Condition="1 paint color (ext/int same or one side only)"; AddOn=224 },
   [pscustomobject]@{ Area="Panel"; Condition="2 paint colors (ext/int different)"; AddOn=449 },
   [pscustomobject]@{ Area="Door Light Frame"; Condition="Door light selected and exterior or interior panel is painted"; AddOn=40 },
+  [pscustomobject]@{ Area="Custom Color"; Condition="Each unique custom paint or stain color name"; AddOn=200 },
   [pscustomobject]@{ Area="Frame"; Condition="1 paint color (ext/int same or one side only)"; AddOn=139 },
   [pscustomobject]@{ Area="Frame"; Condition="2 paint colors (ext/int different)"; AddOn=231 }
 )

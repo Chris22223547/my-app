@@ -623,7 +623,8 @@ function populateFinishOptions(select, finishType) {
 
   select.innerHTML =
     '<option value="">Select color...</option>' +
-    colors.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+    colors.map(([value, label]) => `<option value="${value}">${label}</option>`).join("") +
+    '<option value="custom">Custom</option>';
   select.dataset.finishType = finishType;
 }
 
@@ -650,12 +651,16 @@ const controls = [
   "dividerHorizontal",
   "dividerVertical",
   "finish",
+  "finishCustom",
   "exteriorFinishType",
   "exteriorFrameFinish",
+  "exteriorFrameFinishCustom",
   "exteriorFrameFinishType",
   "interiorFinish",
+  "interiorFinishCustom",
   "interiorFinishType",
   "interiorFrameFinish",
+  "interiorFrameFinishCustom",
   "interiorFrameFinishType",
   "hardware",
   "hardwareFinish",
@@ -804,13 +809,30 @@ function paintFinishPrice() {
   const interiorFrameStained = valueOf("interiorFrameFinishType") === "stain";
   const exteriorFrameColor = valueOf("exteriorFrameFinish");
   const interiorFrameColor = valueOf("interiorFrameFinish");
+  const customColorCount = new Set(
+    ["finish", "exteriorFrameFinish", "interiorFinish", "interiorFrameFinish"]
+      .filter((id) => valueOf(id) === "custom")
+      .map((id) => customFinishText(id).trim().toLowerCase())
+      .filter(Boolean),
+  ).size;
+  const exteriorColorKey = valueOf("finish") === "custom" ? `custom:${customFinishText("finish").toLowerCase()}` : exteriorColor;
+  const interiorColorKey =
+    valueOf("interiorFinish") === "custom" ? `custom:${customFinishText("interiorFinish").toLowerCase()}` : interiorColor;
+  const exteriorFrameColorKey =
+    valueOf("exteriorFrameFinish") === "custom"
+      ? `custom:${customFinishText("exteriorFrameFinish").toLowerCase()}`
+      : exteriorFrameColor;
+  const interiorFrameColorKey =
+    valueOf("interiorFrameFinish") === "custom"
+      ? `custom:${customFinishText("interiorFrameFinish").toLowerCase()}`
+      : interiorFrameColor;
 
   let total = 0;
 
   // Paint pricing (all panel types, including steel): panel and frame are priced separately
   const panelPaintColors = new Set();
-  if (exteriorPainted && exteriorColor) panelPaintColors.add(exteriorColor);
-  if (interiorPainted && interiorColor) panelPaintColors.add(interiorColor);
+  if (exteriorPainted && exteriorColorKey) panelPaintColors.add(exteriorColorKey);
+  if (interiorPainted && interiorColorKey) panelPaintColors.add(interiorColorKey);
   if (panelPaintColors.size === 1) total += 224;
   if (panelPaintColors.size >= 2) total += 449;
   const hasDoorLite = Boolean(valueOf("doorLite")) && valueOf("doorLite") !== "none";
@@ -819,22 +841,24 @@ function paintFinishPrice() {
   const framePaintColors = new Set();
   const exteriorFramePainted = valueOf("exteriorFrameFinishType") === "paint";
   const interiorFramePainted = valueOf("interiorFrameFinishType") === "paint";
-  if (exteriorFramePainted && exteriorFrameColor) framePaintColors.add(exteriorFrameColor);
-  if (interiorFramePainted && interiorFrameColor) framePaintColors.add(interiorFrameColor);
+  if (exteriorFramePainted && exteriorFrameColorKey) framePaintColors.add(exteriorFrameColorKey);
+  if (interiorFramePainted && interiorFrameColorKey) framePaintColors.add(interiorFrameColorKey);
   if (framePaintColors.size === 1) total += 139;
   if (framePaintColors.size >= 2) total += 231;
 
   // Panel stain pricing
   if (exteriorStained && interiorStained && exteriorColor && interiorColor) {
-    total += exteriorColor === interiorColor ? 394 : 676;
+    total += exteriorColorKey === interiorColorKey ? 394 : 676;
   } else if ((exteriorStained && interiorPainted) || (interiorStained && exteriorPainted)) {
     total += 619;
   }
 
   // Frame stain pricing
   if (exteriorFrameStained && interiorFrameStained && exteriorFrameColor && interiorFrameColor) {
-    total += exteriorFrameColor === interiorFrameColor ? 203 : 383;
+    total += exteriorFrameColorKey === interiorFrameColorKey ? 203 : 383;
   }
+
+  total += customColorCount * 200;
 
   return total;
 }
@@ -958,16 +982,34 @@ function cardName(selector) {
   return document.querySelector(selector)?.dataset.name || "";
 }
 
+function customFinishInputId(colorId) {
+  return {
+    finish: "finishCustom",
+    exteriorFrameFinish: "exteriorFrameFinishCustom",
+    interiorFinish: "interiorFinishCustom",
+    interiorFrameFinish: "interiorFrameFinishCustom",
+  }[colorId];
+}
+
+function customFinishText(colorId) {
+  const inputId = customFinishInputId(colorId);
+  return inputId ? valueOf(inputId).trim() : "";
+}
+
+function finishColorText(colorId) {
+  return valueOf(colorId) === "custom" ? customFinishText(colorId) || "Custom" : selectedText(colorId);
+}
+
 function finishDescription(typeId, colorId) {
   const type = selectedText(typeId);
-  const color = selectedText(colorId);
+  const color = finishColorText(colorId);
   if (valueOf(typeId) === steelFinishValue) return "Polytex White";
   return valueOf(typeId) === "unfinished" || !color ? type : `${type} ${color}`;
 }
 
 function finishPrintDescription(typeId, colorId) {
   if (valueOf(typeId) === steelFinishValue) return "Polytex White";
-  return valueOf(typeId) === "unfinished" ? "Unfinished" : selectedText(colorId);
+  return valueOf(typeId) === "unfinished" ? "Unfinished" : finishColorText(colorId);
 }
 
 function finishColorValue(typeId, colorId) {
@@ -1162,7 +1204,16 @@ function applyNewItemDefaults() {
 
   Object.entries(defaultValues).forEach(([id, value]) => setControlValue(id, value));
 
-  ["finish", "exteriorFrameFinish", "interiorFinish", "interiorFrameFinish"].forEach((id) => setControlValue(id, ""));
+  [
+    "finish",
+    "finishCustom",
+    "exteriorFrameFinish",
+    "exteriorFrameFinishCustom",
+    "interiorFinish",
+    "interiorFinishCustom",
+    "interiorFrameFinish",
+    "interiorFrameFinishCustom",
+  ].forEach((id) => setControlValue(id, ""));
   [
     "hardwareSplitFinish",
     "deadboltPassageStyle",
@@ -1216,49 +1267,77 @@ function escapeHtml(value) {
   });
 }
 
+function quoteTimestamp(quote) {
+  return new Date(quote.updatedAt || quote.date || 0).getTime() || 0;
+}
+
+function quoteMatchesQuery(quote, query) {
+  const customer = quote.customer || {};
+  return [
+    quote.quoteNumber,
+    quote.title,
+    customer.customerName,
+    customer.customerPhone,
+    customer.customerAddress,
+    customer.customerEmail,
+    customer.customerCity,
+    quote.createdBy,
+  ]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(query));
+}
+
+function groupedCustomerQuotes(quotes) {
+  const groups = new Map();
+  quotes.forEach((quote) => {
+    const key = quote.customerKey || customerKey(quote.customer) || quote.id;
+    const group = groups.get(key) || { key, items: [] };
+    group.items.push(quote);
+    groups.set(key, group);
+  });
+  return [...groups.values()].map((group) => {
+    const items = group.items.sort((a, b) => quoteTimestamp(b) - quoteTimestamp(a));
+    const primary = items[0];
+    return {
+      ...group,
+      items,
+      primary,
+      total: items.reduce((sum, item) => sum + (Number(item.total) || 0), 0),
+      latestTimestamp: quoteTimestamp(primary),
+    };
+  });
+}
+
 function renderSavedQuotes() {
   const list = document.getElementById("quotesList");
   const quotes = readSavedQuotes();
   const query = document.getElementById("quoteSearch").value.trim().toLowerCase();
-  const filteredQuotes = query
-    ? quotes.filter((quote) => {
-        const customer = quote.customer || {};
-        return [
-          quote.quoteNumber,
-          quote.title,
-          customer.customerName,
-          customer.customerPhone,
-          customer.customerAddress,
-          customer.customerEmail,
-          customer.customerCity,
-          quote.createdBy,
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(query));
-      })
-    : quotes;
+  const customerGroups = groupedCustomerQuotes(quotes).sort((a, b) => b.latestTimestamp - a.latestTimestamp);
+  const filteredGroups = query
+    ? customerGroups.filter((group) => group.items.some((quote) => quoteMatchesQuery(quote, query)))
+    : customerGroups;
   if (!quotes.length) {
     list.innerHTML = '<div class="quotes-empty">No saved quotes yet. Start a new quote, then use Save Quote to add it here.</div>';
     return;
   }
-  if (!filteredQuotes.length) {
+  if (!filteredGroups.length) {
     list.innerHTML = '<div class="quotes-empty">No quotes match your search.</div>';
     return;
   }
 
-  list.innerHTML = filteredQuotes
+  list.innerHTML = filteredGroups
     .map(
-      (quote) => {
+      (group) => {
+        const quote = group.primary;
         const customerName = quote.customer?.customerName || quote.title || "No customer name";
         const quoteDate = quote.date ? new Date(quote.date).toLocaleDateString("en-CA") : "";
-        const quoteTotal = currency.format(quote.total || 0);
         const createdBy = quote.createdBy || "Unknown";
+        const itemLabel = group.items.length === 1 ? "1 item" : `${group.items.length} items`;
         return `<article class="quote-list-item">
         <button class="quote-number-link quote-row-number" type="button" data-quote-id="${escapeHtml(quote.id)}">${escapeHtml(quote.quoteNumber)}</button>
         <span class="quote-row-name">${escapeHtml(customerName)}</span>
         <span class="quote-row-date">${escapeHtml(quoteDate)}</span>
-        <span class="quote-row-total">${escapeHtml(quoteTotal)}</span>
-        <span class="quote-row-created">Created by ${escapeHtml(createdBy)}</span>
+        <span class="quote-row-created">Created by ${escapeHtml(createdBy)} - ${escapeHtml(itemLabel)}</span>
         <button class="quote-open" type="button" data-quote-id="${escapeHtml(quote.id)}">View</button>
       </article>`;
       },
@@ -1284,18 +1363,45 @@ function renderQuoteDetail(quote) {
   document.getElementById("detailCustomerInfo").textContent = info;
   document.getElementById("quoteItemsList").innerHTML = items
     .map(
-      (item) => `<article class="quote-item-row">
+      (item) => {
+        const systemSummary = labels.systemType[item.values?.systemType] || "Door";
+        return `<article class="quote-item-row">
         <div>
           <h2>${escapeHtml(item.quoteNumber)} - ${escapeHtml(item.title || "Door Item")}</h2>
+          <p>${escapeHtml(systemSummary)}</p>
           <p>${new Date(item.date).toLocaleDateString("en-CA")} - ${currency.format(item.total || 0)}</p>
         </div>
         <div class="quote-item-actions">
           <button class="item-open" type="button" data-quote-id="${escapeHtml(item.id)}">Open Item</button>
+          <button class="item-copy" type="button" data-quote-id="${escapeHtml(item.id)}">Copy</button>
           <button class="item-delete" type="button" data-quote-id="${escapeHtml(item.id)}">Delete</button>
         </div>
-      </article>`,
+      </article>`;
+      },
     )
     .join("");
+}
+
+async function copyQuoteItem(quoteId) {
+  const quotes = readSavedQuotes();
+  const quote = quotes.find((item) => item.id === quoteId);
+  if (!quote) return;
+
+  const copiedQuote = {
+    ...quote,
+    id: Date.now().toString(),
+    quoteNumber: generateQuoteNumber(),
+    date: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    createdBy: currentUserDisplayName(),
+    createdByUsername: currentUsername,
+    copiedFrom: quote.quoteNumber,
+  };
+
+  writeSavedQuotes([...quotes, copiedQuote]);
+  await syncQuoteToSharedStorage(copiedQuote);
+  renderQuoteDetail(copiedQuote);
+  renderSavedQuotes();
 }
 
 async function deleteQuoteItem(quoteId) {
@@ -1723,16 +1829,23 @@ function updateFinishFields() {
   document.querySelectorAll("[data-finish-color-for]").forEach((field) => {
     const typeSelect = document.getElementById(field.dataset.finishColorFor);
     const usesSecondaryColor = ["paint", "stain"].includes(typeSelect.value);
-    const isUnfinished = typeSelect.value === "unfinished";
     const select = field.querySelector("select");
+    const customInput = field.querySelector(".custom-finish-color");
     if (usesSecondaryColor && select.dataset.finishType !== typeSelect.value) {
       populateFinishOptions(select, typeSelect.value);
     }
+    const usesCustomColor = select.value === "custom";
+    customInput.hidden = !usesCustomColor;
+    customInput.disabled = !usesCustomColor;
+    if (!usesCustomColor) customInput.value = "";
     field.hidden = !usesSecondaryColor && !canMatchExterior;
     select.disabled = !usesSecondaryColor;
     if (!usesSecondaryColor) select.value = "";
     field.classList.toggle("match-only", !usesSecondaryColor && canMatchExterior);
-    field.classList.toggle("needs-selection", usesSecondaryColor && !select.value);
+    field.classList.toggle(
+      "needs-selection",
+      usesSecondaryColor && (!select.value || (usesCustomColor && !customInput.value.trim())),
+    );
   });
 
   document.querySelectorAll(".match-exterior-finish").forEach((button) => {
@@ -1785,6 +1898,10 @@ document.querySelectorAll(".accordion-head").forEach((button) => {
 
 controls.forEach((id) => {
   document.getElementById(id).addEventListener("change", updateAll);
+});
+
+document.querySelectorAll(".custom-finish-color").forEach((input) => {
+  input.addEventListener("input", updateAll);
 });
 
 document.querySelectorAll(".system-card").forEach((button) => {
@@ -1868,6 +1985,8 @@ panelThumb.addEventListener("pointercancel", stopPanelDrag);
 document.querySelectorAll(".clear-finish").forEach((button) => {
   button.addEventListener("click", () => {
     document.getElementById(button.dataset.target).value = "";
+    const customInputId = customFinishInputId(button.dataset.target);
+    if (customInputId) document.getElementById(customInputId).value = "";
     updateAll();
   });
 });
@@ -1880,6 +1999,11 @@ document.querySelectorAll(".match-exterior-finish").forEach((button) => {
     targetType.value = valueOf(source.typeId);
     populateFinishOptions(targetColor, targetType.value);
     targetColor.value = valueOf(source.colorId);
+    const sourceCustomId = customFinishInputId(source.colorId);
+    const targetCustomId = customFinishInputId(button.dataset.targetColor);
+    if (sourceCustomId && targetCustomId) {
+      document.getElementById(targetCustomId).value = document.getElementById(sourceCustomId).value;
+    }
     updateAll();
   });
 });
@@ -2075,6 +2199,12 @@ document.getElementById("quoteItemsList").addEventListener("click", (event) => {
   if (openButton) {
     const quote = readSavedQuotes().find((item) => item.id === openButton.dataset.quoteId);
     if (quote) restoreQuote(quote);
+    return;
+  }
+
+  const copyButton = event.target.closest(".item-copy");
+  if (copyButton) {
+    copyQuoteItem(copyButton.dataset.quoteId);
     return;
   }
 

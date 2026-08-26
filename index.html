@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>West Built Door Builder</title>
-    <link rel="stylesheet" href="styles.css?v=unique-custom-color-v1" />
+    <link rel="stylesheet" href="styles.css?v=build-complete-inventory-v2" />
   </head>
   <body>
     <section class="login-view" id="loginView" aria-label="Login">
@@ -27,6 +27,8 @@
     <aside class="rail auth-required" aria-label="Main navigation">
       <div class="logo"><span>west</span>built</div>
       <a class="rail-link active" href="#" id="quotesLink"><span>▤</span>Quotes</a>
+      <a class="rail-link" href="#" id="inventoryLink"><span>▦</span>Inventory</a>
+      <a class="rail-link" href="#" id="ordersLink"><span>▥</span>Orders</a>
     </aside>
 
     <main class="builder auth-required">
@@ -57,6 +59,66 @@
           <input id="quoteSearch" type="search" placeholder="Search by quote number, customer, phone, email, or city..." />
         </label>
         <div class="quotes-list" id="quotesList"></div>
+      </section>
+
+      <section class="quotes-page inventory-page" id="inventoryPage" hidden>
+        <div class="quotes-header inventory-header">
+          <div>
+            <h1>Sill Inventory</h1>
+            <p>DoorCom sill depths, sill extensions, cut stock, and reorder warnings.</p>
+          </div>
+        </div>
+
+        <div class="inventory-summary" id="inventorySummary"></div>
+
+        <div class="inventory-actions">
+          <form class="inventory-form" id="receiveInventoryForm">
+            <h2>Receive Stock</h2>
+            <label>
+              Size
+              <select id="receiveInventoryItem"></select>
+            </label>
+            <label>
+              Full Lengths
+              <input id="receiveFullSticks" type="number" min="0" step="1" value="0" />
+            </label>
+            <label>
+              Loose Cut Pieces
+              <input id="receiveLoosePieces" type="number" min="0" step="1" value="0" />
+            </label>
+            <button type="submit">Add Stock</button>
+          </form>
+
+          <form class="inventory-form" id="useInventoryForm">
+            <h2>Use For Builds</h2>
+            <label>
+              Size
+              <select id="useInventoryItem"></select>
+            </label>
+            <label>
+              Pieces Needed
+              <input id="useInventoryQuantity" type="number" min="1" step="1" value="1" />
+            </label>
+            <button type="submit">Use Stock</button>
+          </form>
+        </div>
+
+        <div class="inventory-list" id="inventoryTableBody"></div>
+        <div class="inventory-detail" id="inventoryDetail"></div>
+      </section>
+
+      <section class="quotes-page orders-page" id="ordersPage" hidden>
+        <div class="quotes-header">
+          <div>
+            <h1>Orders</h1>
+            <p>Quotes that have been moved into production appear here.</p>
+          </div>
+        </div>
+        <label class="quote-search">
+          <span>Search Orders</span>
+          <input id="orderSearch" type="search" placeholder="Search by order, quote number, customer, phone, email, or city..." />
+        </label>
+        <div class="quotes-list" id="ordersList"></div>
       </section>
 
       <section class="customer-page" id="customerPage" hidden>
@@ -968,7 +1030,7 @@
       </footer>
     </main>
 
-    <script src="supabase-config.js?v=unique-custom-color-v1"></script>
-    <script src="app.js?v=unique-custom-color-v1"></script>
+    <script src="supabase-config.js?v=build-complete-inventory-v2"></script>
+    <script src="app.js?v=build-complete-inventory-v2"></script>
   </body>
 </html>

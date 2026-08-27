@@ -1313,11 +1313,13 @@ function restoreQuote(quote) {
   setCustomerDetails(quote.customer);
   document.getElementById("quoteNumber").textContent = quote.quoteNumber || "1430081";
   customFrameHeight = quote.customFrameHeight || "";
-  Object.entries(quote.values || {}).forEach(([id, value]) => setControlValue(id, value));
+  const savedValues = quote.values || {};
+  Object.entries(savedValues).forEach(([id, value]) => setControlValue(id, value));
+  updatePanelCards();
+  updateLiteFields();
   updateFinishFields();
-  ["finish", "exteriorFrameFinish", "interiorFinish", "interiorFrameFinish"].forEach((id) => {
-    if (quote.values && id in quote.values) setControlValue(id, quote.values[id]);
-  });
+  Object.entries(savedValues).forEach(([id, value]) => setControlValue(id, value));
+  updateFinishFields();
   document.getElementById("notes").value = quote.notes || "";
   updateAll();
   setActiveView("builder");

@@ -817,7 +817,10 @@ function totalPrice() {
 
 function selectedDoorLitePrice() {
   const liteType = valueOf("doorLite");
-  if (liteType === "custom") return customGlassPrices[valueOf("liteSize")] || 0;
+  if (liteType === "custom") {
+    const basePrice = customGlassPrices[valueOf("liteSize")] || 0;
+    return basePrice + (valueOf("liteOption") === "frosted" ? 100 : 0);
+  }
   if (!["fusion", "trim-lite"].includes(liteType)) return 0;
 
   const style = valueOf("liteGlassStyle");

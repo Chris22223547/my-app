@@ -556,7 +556,6 @@ const currency = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 const savedQuotesKey = "westBuiltDoorBuilderQuotes";
-const sillInventoryKey = "westBuiltSillInventory";
 const customerFields = ["customerName", "customerPhone", "customerAddress", "customerEmail", "customerCity"];
 const validUsers = {
   chris: { password: "chris123", name: "Chris", email: "chris@westwindows.on.ca" },
@@ -570,88 +569,6 @@ let activeQuoteCustomer = null;
 let activeQuoteId = null;
 let currentUsername = sessionStorage.getItem("westBuiltDoorBuilderUser") || "";
 let savedQuotesCache = [];
-let quoteDetailReturnView = "quotes";
-let activeInventoryDetailId = "";
-
-const defaultSillInventory = [
-  {
-    id: "sill-4-13-16",
-    type: "sill",
-    size: '4 13/16"',
-    supplier: "DoorCom",
-    lengthInches: 110,
-    piecesPerStick: 3,
-    fullSticks: 0,
-    loosePieces: 0,
-    reorderPoint: 6,
-  },
-  {
-    id: "sill-5-13-16",
-    type: "sill",
-    size: '5 13/16"',
-    supplier: "DoorCom",
-    lengthInches: 110,
-    piecesPerStick: 3,
-    fullSticks: 0,
-    loosePieces: 0,
-    reorderPoint: 6,
-  },
-  {
-    id: "sill-6-13-16",
-    type: "sill",
-    size: '6 13/16"',
-    supplier: "DoorCom",
-    lengthInches: 110,
-    piecesPerStick: 3,
-    fullSticks: 0,
-    loosePieces: 0,
-    reorderPoint: 6,
-  },
-  {
-    id: "extension-1-1-16",
-    type: "extension",
-    size: '1 1/16"',
-    supplier: "DoorCom",
-    lengthInches: 162,
-    piecesPerStick: 4,
-    fullSticks: 0,
-    loosePieces: 0,
-    reorderPoint: 8,
-  },
-  {
-    id: "extension-2",
-    type: "extension",
-    size: '2"',
-    supplier: "DoorCom",
-    lengthInches: 162,
-    piecesPerStick: 4,
-    fullSticks: 0,
-    loosePieces: 0,
-    reorderPoint: 8,
-  },
-  {
-    id: "extension-3-1-4",
-    type: "extension",
-    size: '3 1/4"',
-    supplier: "DoorCom",
-    lengthInches: 162,
-    piecesPerStick: 4,
-    fullSticks: 0,
-    loosePieces: 0,
-    reorderPoint: 8,
-  },
-  {
-    id: "extension-4-3-8",
-    type: "extension",
-    size: '4 3/8"',
-    supplier: "DoorCom",
-    lengthInches: 162,
-    piecesPerStick: 4,
-    fullSticks: 0,
-    loosePieces: 0,
-    reorderPoint: 8,
-  },
-];
 
 function localQuotes() {
   try {
@@ -659,313 +576,6 @@ function localQuotes() {
   } catch {
     return [];
   }
-}
-
-function normalizedInventoryItem(item) {
-  return {
-    id: item.id || `inventory-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    type: item.type === "extension" ? "extension" : "sill",
-    size: String(item.size || "Untitled size").trim(),
-    supplier: String(item.supplier || "DoorCom").trim(),
-    lengthInches: Math.max(1, Number.parseInt(item.lengthInches, 10) || 1),
-    piecesPerStick: Math.max(1, Number.parseInt(item.piecesPerStick, 10) || 1),
-    fullSticks: Math.max(0, Number.parseInt(item.fullSticks, 10) || 0),
-    loosePieces: Math.max(0, Number.parseInt(item.loosePieces, 10) || 0),
-    reorderPoint: Math.max(0, Number.parseInt(item.reorderPoint, 10) || 0),
-  };
-}
-
-function fixedInventoryFromSaved(saved = []) {
-  const savedById = new Map(saved.map((item) => [item.id, normalizedInventoryItem(item)]));
-  return defaultSillInventory.map((defaultItem) => {
-    const savedItem = savedById.get(defaultItem.id);
-    return normalizedInventoryItem({
-      ...defaultItem,
-      fullSticks: savedItem?.fullSticks ?? defaultItem.fullSticks,
-      loosePieces: savedItem?.loosePieces ?? defaultItem.loosePieces,
-      reorderPoint: savedItem?.reorderPoint ?? defaultItem.reorderPoint,
-    });
-  });
-}
-
-function readSillInventory() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(sillInventoryKey) || "null");
-    if (Array.isArray(saved) && saved.length) return fixedInventoryFromSaved(saved);
-  } catch {
-    return fixedInventoryFromSaved();
-  }
-  return fixedInventoryFromSaved();
-}
-
-function writeSillInventory(items) {
-  localStorage.setItem(sillInventoryKey, JSON.stringify(fixedInventoryFromSaved(items)));
-}
-
-function inventoryAvailablePieces(item) {
-  return item.fullSticks * item.piecesPerStick + item.loosePieces;
-}
-
-function inventoryLabel(item) {
-  const typeLabel = item.type === "extension" ? "Extension" : "Sill";
-  return `${item.size} (${typeLabel})`;
-}
-
-function renderInventorySelects(items) {
-  const options = items
-    .map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(inventoryLabel(item))}</option>`)
-    .join("");
-  document.getElementById("receiveInventoryItem").innerHTML = options;
-  document.getElementById("useInventoryItem").innerHTML = options;
-}
-
-function renderInventorySummary(items) {
-  const orderItems = items.filter((item) => inventoryAvailablePieces(item) <= item.reorderPoint);
-  const totalPieces = items.reduce((sum, item) => sum + inventoryAvailablePieces(item), 0);
-  const totalFull = items.reduce((sum, item) => sum + item.fullSticks, 0);
-  const pendingPieces = items.reduce((sum, item) => sum + pendingInventoryQuantity(item.id), 0);
-  const cards = [
-    `<div class="inventory-summary-card"><span>Total Available Pieces</span><strong>${totalPieces}</strong></div>`,
-    `<div class="inventory-summary-card"><span>Full Lengths In Stock</span><strong>${totalFull}</strong></div>`,
-    `<div class="inventory-summary-card"><span>Needed For Open Builds</span><strong>${pendingPieces}</strong></div>`,
-    `<div class="inventory-summary-card ${orderItems.length ? "needs-order" : ""}"><span>Need To Order</span><strong>${orderItems.length}</strong></div>`,
-  ];
-  document.getElementById("inventorySummary").innerHTML = cards.join("");
-}
-
-function renderSillInventory() {
-  const items = readSillInventory();
-  if (!activeInventoryDetailId && items.length) activeInventoryDetailId = items[0].id;
-  renderInventorySummary(items);
-  renderInventorySelects(items);
-
-  const rows = items
-    .map((item) => {
-      const available = inventoryAvailablePieces(item);
-      const pendingNeeded = pendingInventoryQuantity(item.id);
-      const shortage = Math.max(0, pendingNeeded - available);
-      const needsOrder = available <= item.reorderPoint || shortage > 0;
-      const status = needsOrder ? "Order more" : "OK";
-      const orderFullLengths = needsOrder
-        ? Math.max(1, Math.ceil((Math.max(item.reorderPoint * 2, pendingNeeded) - available) / item.piecesPerStick))
-        : 0;
-      const orderText = shortage
-        ? `Short ${shortage}: order ${orderFullLengths} full length${orderFullLengths === 1 ? "" : "s"}`
-        : needsOrder
-          ? `${status}: ${orderFullLengths} full length${orderFullLengths === 1 ? "" : "s"}`
-          : status;
-      return `
-        <div class="quote-list-item inventory-list-item ${needsOrder ? "inventory-low" : ""} ${item.id === activeInventoryDetailId ? "inventory-selected" : ""}" data-inventory-id="${escapeHtml(item.id)}">
-          <div class="inventory-main">
-            <span class="quote-row-name">${escapeHtml(item.size)}</span>
-            <span class="quote-row-created">${escapeHtml(item.type === "extension" ? "Sill Extension" : "Door Sill")} - ${escapeHtml(item.supplier)}</span>
-          </div>
-          <span class="quote-row-date">${item.lengthInches}" full length</span>
-          <span class="quote-row-date">${item.piecesPerStick} pieces per length</span>
-          <label class="inventory-mini-field">
-            <span>Full</span>
-            <input class="inventory-count" type="number" min="0" step="1" value="${item.fullSticks}" data-inventory-id="${escapeHtml(item.id)}" data-field="fullSticks" aria-label="Full lengths for ${escapeHtml(item.size)}" />
-          </label>
-          <label class="inventory-mini-field">
-            <span>Loose</span>
-            <input class="inventory-count" type="number" min="0" step="1" value="${item.loosePieces}" data-inventory-id="${escapeHtml(item.id)}" data-field="loosePieces" aria-label="Loose pieces for ${escapeHtml(item.size)}" />
-          </label>
-          <div class="inventory-available"><span>Available</span><strong>${available}</strong></div>
-          <div class="inventory-available"><span>Needed</span><strong>${pendingNeeded}</strong></div>
-          <label class="inventory-mini-field">
-            <span>Reorder</span>
-            <input class="inventory-count" type="number" min="0" step="1" value="${item.reorderPoint}" data-inventory-id="${escapeHtml(item.id)}" data-field="reorderPoint" aria-label="Reorder point for ${escapeHtml(item.size)}" />
-          </label>
-          <div class="inventory-status-wrap">
-            <span class="inventory-status">${escapeHtml(orderText)}</span>
-            <button class="inventory-orders-btn" type="button" data-inventory-id="${escapeHtml(item.id)}">View Orders</button>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
-
-  document.getElementById("inventoryTableBody").innerHTML =
-    rows || '<div class="quotes-empty">No sill inventory sizes yet.</div>';
-  renderInventoryDetail(items.find((item) => item.id === activeInventoryDetailId) || items[0]);
-}
-
-function renderInventoryDetail(item) {
-  const detail = document.getElementById("inventoryDetail");
-  if (!detail || !item) return;
-  const entries = pendingInventoryNeedsForItem(item.id);
-  const available = inventoryAvailablePieces(item);
-  const needed = entries.reduce((sum, entry) => sum + entry.need.quantity, 0);
-  const shortage = Math.max(0, needed - available);
-
-  if (!entries.length) {
-    detail.innerHTML = `
-      <section class="inventory-detail-card">
-        <div>
-          <h2>${escapeHtml(inventoryLabel(item))}</h2>
-          <p>No open orders need this item right now.</p>
-        </div>
-      </section>
-    `;
-    return;
-  }
-
-  detail.innerHTML = `
-    <section class="inventory-detail-card">
-      <div class="inventory-detail-head">
-        <div>
-          <h2>${escapeHtml(inventoryLabel(item))}</h2>
-          <p>Available ${available} - Needed ${needed}${shortage ? ` - Short ${shortage}` : ""}</p>
-        </div>
-      </div>
-      <div class="inventory-order-list">
-        ${entries
-          .map(({ quote, need }) => {
-            const customerName = quote.customer?.customerName || quote.title || "No customer name";
-            const orderNumber = quote.orderNumber || quote.quoteNumber;
-            return `
-              <article class="inventory-order-row">
-                <div>
-                  <h3>${escapeHtml(orderNumber)} - ${escapeHtml(customerName)}</h3>
-                  <p>${escapeHtml(quote.quoteNumber)} - needs ${need.quantity}</p>
-                </div>
-                <div class="inventory-order-actions">
-                  <button class="quote-open inventory-open-order" type="button" data-quote-id="${escapeHtml(quote.id)}">Open</button>
-                  <button class="item-order-built" type="button" data-quote-id="${escapeHtml(quote.id)}">Door Built</button>
-                </div>
-              </article>
-            `;
-          })
-          .join("")}
-      </div>
-    </section>
-  `;
-}
-
-function updateInventoryCount(itemId, field, value) {
-  const items = readSillInventory();
-  const item = items.find((candidate) => candidate.id === itemId);
-  if (!item || !["fullSticks", "loosePieces", "reorderPoint"].includes(field)) return;
-  item[field] = Math.max(0, Number.parseInt(value, 10) || 0);
-  writeSillInventory(items);
-  renderSillInventory();
-}
-
-function receiveInventory(itemId, fullSticks, loosePieces) {
-  const items = readSillInventory();
-  const item = items.find((candidate) => candidate.id === itemId);
-  if (!item) return;
-  item.fullSticks += Math.max(0, Number.parseInt(fullSticks, 10) || 0);
-  item.loosePieces += Math.max(0, Number.parseInt(loosePieces, 10) || 0);
-  writeSillInventory(items);
-  renderSillInventory();
-}
-
-function useInventoryPieces(itemId, quantity) {
-  const items = readSillInventory();
-  const item = items.find((candidate) => candidate.id === itemId);
-  const needed = Math.max(1, Number.parseInt(quantity, 10) || 1);
-  if (!item) return;
-  if (inventoryAvailablePieces(item) < needed) {
-    alert(`Not enough stock for ${inventoryLabel(item)}. Available: ${inventoryAvailablePieces(item)}.`);
-    return;
-  }
-
-  let remaining = needed;
-  const looseUsed = Math.min(item.loosePieces, remaining);
-  item.loosePieces -= looseUsed;
-  remaining -= looseUsed;
-
-  while (remaining > 0 && item.fullSticks > 0) {
-    item.fullSticks -= 1;
-    item.loosePieces += item.piecesPerStick;
-    const usedFromCutLength = Math.min(item.loosePieces, remaining);
-    item.loosePieces -= usedFromCutLength;
-    remaining -= usedFromCutLength;
-  }
-
-  writeSillInventory(items);
-  renderSillInventory();
-}
-
-function removeInventoryPieces(items, itemId, quantity) {
-  const item = items.find((candidate) => candidate.id === itemId);
-  const needed = Math.max(0, Number.parseInt(quantity, 10) || 0);
-  if (!item || !needed) return false;
-  if (inventoryAvailablePieces(item) < needed) return false;
-
-  let remaining = needed;
-  const looseUsed = Math.min(item.loosePieces, remaining);
-  item.loosePieces -= looseUsed;
-  remaining -= looseUsed;
-
-  while (remaining > 0 && item.fullSticks > 0) {
-    item.fullSticks -= 1;
-    item.loosePieces += item.piecesPerStick;
-    const usedFromCutLength = Math.min(item.loosePieces, remaining);
-    item.loosePieces -= usedFromCutLength;
-    remaining -= usedFromCutLength;
-  }
-
-  return remaining === 0;
-}
-
-function defaultSillForQuote(quote) {
-  const jambDepth = quote?.values?.jambDepth;
-  if (jambDepth === "6.625") return "sill-5-13-16";
-  if (jambDepth === "7.25") return "sill-6-13-16";
-  return "sill-4-13-16";
-}
-
-function defaultOrderBuild(quote) {
-  return {
-    sillItemId: quote?.orderBuild?.sillItemId || defaultSillForQuote(quote),
-    extensionItemId: quote?.orderBuild?.extensionItemId || "",
-    quantity: Math.max(1, Number.parseInt(quote?.orderBuild?.quantity, 10) || 1),
-  };
-}
-
-function inventoryItemName(itemId) {
-  const item = readSillInventory().find((candidate) => candidate.id === itemId);
-  return item ? inventoryLabel(item) : "";
-}
-
-function isOrderBuilt(quote) {
-  return quote?.buildStatus === "built" || Boolean(quote?.orderInventoryApplied?.length && !quote?.buildStatus);
-}
-
-function orderInventoryNeeds(quote) {
-  const build = defaultOrderBuild(quote);
-  const needs = [];
-  if (build.sillItemId) {
-    needs.push({
-      itemId: build.sillItemId,
-      quantity: build.quantity,
-      label: inventoryItemName(build.sillItemId) || "Door sill",
-    });
-  }
-  if (build.extensionItemId) {
-    needs.push({
-      itemId: build.extensionItemId,
-      quantity: build.quantity,
-      label: inventoryItemName(build.extensionItemId) || "Sill extension",
-    });
-  }
-  return needs;
-}
-
-function pendingInventoryNeedsForItem(itemId) {
-  return orderQuotes()
-    .filter((quote) => !isOrderBuilt(quote))
-    .flatMap((quote) =>
-      orderInventoryNeeds(quote)
-        .filter((need) => need.itemId === itemId)
-        .map((need) => ({ quote, need })),
-    );
-}
-
-function pendingInventoryQuantity(itemId) {
-  return pendingInventoryNeedsForItem(itemId).reduce((sum, entry) => sum + entry.need.quantity, 0);
 }
 
 function sharedStorageConfig() {
@@ -1576,19 +1186,6 @@ function generateQuoteNumber() {
   return quoteNumber;
 }
 
-function isOrder(quote) {
-  return quote?.orderStatus === "order";
-}
-
-function generateOrderNumber() {
-  const existing = new Set(readSavedQuotes().map((quote) => quote.orderNumber).filter(Boolean));
-  let orderNumber = "";
-  do {
-    orderNumber = `O-${Math.floor(100000 + Math.random() * 900000)}`;
-  } while (existing.has(orderNumber));
-  return orderNumber;
-}
-
 function captureQuoteState(existingQuote = null) {
   const totals = totalPrice();
   const values = Object.fromEntries(controls.map((id) => [id, valueOf(id)]));
@@ -1608,17 +1205,6 @@ function captureQuoteState(existingQuote = null) {
     values,
     notes: document.getElementById("notes").value,
     customFrameHeight,
-    orderStatus: existingQuote?.orderStatus || "",
-    orderNumber: existingQuote?.orderNumber || "",
-    orderedAt: existingQuote?.orderedAt || "",
-    orderedBy: existingQuote?.orderedBy || "",
-    orderedByUsername: existingQuote?.orderedByUsername || "",
-    orderBuild: existingQuote?.orderBuild || null,
-    buildStatus: existingQuote?.buildStatus || "",
-    builtAt: existingQuote?.builtAt || "",
-    builtBy: existingQuote?.builtBy || "",
-    builtByUsername: existingQuote?.builtByUsername || "",
-    orderInventoryApplied: existingQuote?.orderInventoryApplied || [],
   };
 }
 
@@ -1642,8 +1228,7 @@ async function saveCurrentQuote() {
   activeQuoteId = quote.id;
   document.getElementById("quoteNumber").textContent = quote.quoteNumber;
   renderSavedQuotes();
-  renderOrders();
-  openQuoteDetail(quote.id, isOrder(quote) ? "orders" : "quotes");
+  openQuoteDetail(quote.id);
 }
 
 function startNewQuote() {
@@ -1749,7 +1334,6 @@ function quoteMatchesQuery(quote, query) {
   const customer = quote.customer || {};
   return [
     quote.quoteNumber,
-    quote.orderNumber,
     quote.title,
     customer.customerName,
     customer.customerPhone,
@@ -1760,10 +1344,6 @@ function quoteMatchesQuery(quote, query) {
   ]
     .filter(Boolean)
     .some((value) => String(value).toLowerCase().includes(query));
-}
-
-function orderQuotes() {
-  return readSavedQuotes().filter(isOrder);
 }
 
 function groupedCustomerQuotes(quotes) {
@@ -1824,80 +1404,6 @@ function renderSavedQuotes() {
     .join("");
 }
 
-function renderOrders() {
-  const list = document.getElementById("ordersList");
-  if (!list) return;
-  const orders = orderQuotes().sort((a, b) => quoteTimestamp(b) - quoteTimestamp(a));
-  const query = document.getElementById("orderSearch").value.trim().toLowerCase();
-  const filteredOrders = query ? orders.filter((quote) => quoteMatchesQuery(quote, query)) : orders;
-  if (!orders.length) {
-    list.innerHTML = '<div class="quotes-empty">No orders yet. Open a quote and use Make Order when it is ready for production.</div>';
-    return;
-  }
-  if (!filteredOrders.length) {
-    list.innerHTML = '<div class="quotes-empty">No orders match your search.</div>';
-    return;
-  }
-
-  list.innerHTML = filteredOrders
-    .map((quote) => {
-      const customerName = quote.customer?.customerName || quote.title || "No customer name";
-      const orderDate = quote.orderedAt ? new Date(quote.orderedAt).toLocaleDateString("en-CA") : "";
-      const build = defaultOrderBuild(quote);
-      const buildLabel = [
-        isOrderBuilt(quote) ? "Built" : "Open build",
-        `${build.quantity} door${build.quantity === 1 ? "" : "s"}`,
-        inventoryItemName(build.sillItemId),
-        build.extensionItemId ? inventoryItemName(build.extensionItemId) : "",
-      ]
-        .filter(Boolean)
-        .join(" - ");
-      return `<article class="quote-list-item order-list-item">
-        <button class="quote-number-link quote-row-number" type="button" data-quote-id="${escapeHtml(quote.id)}">${escapeHtml(quote.orderNumber || quote.quoteNumber)}</button>
-        <span class="quote-row-name">${escapeHtml(customerName)}</span>
-        <span class="quote-row-date">${escapeHtml(orderDate)}</span>
-        <span class="quote-row-created">Quote ${escapeHtml(quote.quoteNumber)} - ${escapeHtml(buildLabel)}</span>
-        <button class="quote-open" type="button" data-quote-id="${escapeHtml(quote.id)}">View</button>
-      </article>`;
-    })
-    .join("");
-}
-
-function inventoryOptions(type, selectedValue, includeNone = false) {
-  const items = readSillInventory().filter((item) => item.type === type);
-  const options = includeNone ? ['<option value="">None</option>'] : [];
-  items.forEach((item) => {
-    options.push(`<option value="${escapeHtml(item.id)}" ${item.id === selectedValue ? "selected" : ""}>${escapeHtml(item.size)}</option>`);
-  });
-  return options.join("");
-}
-
-function orderBuildEditor(item) {
-  if (!isOrder(item) || currentUsername !== "chris") return "";
-  if (isOrderBuilt(item)) {
-    const builtDate = item.builtAt ? new Date(item.builtAt).toLocaleDateString("en-CA") : "";
-    return `<div class="order-built-note">Built ${escapeHtml(builtDate)} - inventory deducted.</div>`;
-  }
-  const build = defaultOrderBuild(item);
-  return `
-    <form class="order-build-form" data-quote-id="${escapeHtml(item.id)}">
-      <label>
-        Sill Size
-        <select name="sillItemId">${inventoryOptions("sill", build.sillItemId)}</select>
-      </label>
-      <label>
-        Sill Extension
-        <select name="extensionItemId">${inventoryOptions("extension", build.extensionItemId, true)}</select>
-      </label>
-      <label>
-        Doors To Build
-        <input name="quantity" type="number" min="1" step="1" value="${build.quantity}" />
-      </label>
-      <button type="submit">Save Build Info</button>
-    </form>
-  `;
-}
-
 function matchingCustomerQuotes(quote) {
   const key = quote.customerKey || customerKey(quote.customer);
   return readSavedQuotes().filter((item) => (item.customerKey || customerKey(item.customer)) === key);
@@ -1906,7 +1412,7 @@ function matchingCustomerQuotes(quote) {
 function renderQuoteDetail(quote) {
   activeQuoteCustomer = quote.customer || null;
   const customer = quote.customer || {};
-  const items = quoteDetailReturnView === "orders" ? [quote] : matchingCustomerQuotes(quote);
+  const items = matchingCustomerQuotes(quote);
   const customerName = customer.customerName || quote.title || "Customer Quote";
   const info = [customer.customerPhone, customer.customerEmail, customer.customerAddress, customer.customerCity]
     .filter(Boolean)
@@ -1914,26 +1420,18 @@ function renderQuoteDetail(quote) {
 
   document.getElementById("detailCustomerName").textContent = customerName;
   document.getElementById("detailCustomerInfo").textContent = info;
-  document.getElementById("backToQuotesBtn").textContent = quoteDetailReturnView === "orders" ? "Back to Orders" : "Back to Quotes";
   document.getElementById("quoteItemsList").innerHTML = items
     .map(
       (item) => {
         const systemSummary = labels.systemType[item.values?.systemType] || "Door";
-        const orderMeta = isOrder(item)
-          ? `<p>Order ${escapeHtml(item.orderNumber || "")} - ${escapeHtml(item.orderedAt ? new Date(item.orderedAt).toLocaleDateString("en-CA") : "")}${isOrderBuilt(item) ? " - Built" : ""}</p>`
-          : "";
         return `<article class="quote-item-row">
         <div>
           <h2>${escapeHtml(item.quoteNumber)} - ${escapeHtml(item.title || "Door Item")}</h2>
           <p>${escapeHtml(systemSummary)}</p>
-          ${orderMeta}
           <p>${new Date(item.date).toLocaleDateString("en-CA")} - ${currency.format(item.total || 0)}</p>
-          ${orderBuildEditor(item)}
         </div>
         <div class="quote-item-actions">
-          <button class="item-open" type="button" data-quote-id="${escapeHtml(item.id)}">${isOrder(item) ? "Edit Order" : "Open Item"}</button>
-          ${isOrder(item) || currentUsername !== "chris" ? "" : `<button class="item-order" type="button" data-quote-id="${escapeHtml(item.id)}">Make Order</button>`}
-          ${isOrder(item) && !isOrderBuilt(item) && currentUsername === "chris" ? `<button class="item-order-built" type="button" data-quote-id="${escapeHtml(item.id)}">Door Built</button>` : ""}
+          <button class="item-open" type="button" data-quote-id="${escapeHtml(item.id)}">Open Item</button>
           <button class="item-copy" type="button" data-quote-id="${escapeHtml(item.id)}">Copy</button>
           <button class="item-delete" type="button" data-quote-id="${escapeHtml(item.id)}">Delete</button>
         </div>
@@ -1941,85 +1439,6 @@ function renderQuoteDetail(quote) {
       },
     )
     .join("");
-}
-
-async function makeQuoteOrder(quoteId) {
-  if (currentUsername !== "chris") return;
-  const quotes = readSavedQuotes();
-  const quote = quotes.find((item) => item.id === quoteId);
-  if (!quote) return;
-  const orderQuote = {
-    ...quote,
-    orderStatus: "order",
-    orderNumber: quote.orderNumber || generateOrderNumber(),
-    orderedAt: quote.orderedAt || new Date().toISOString(),
-    orderedBy: quote.orderedBy || currentUserDisplayName(),
-    orderedByUsername: quote.orderedByUsername || currentUsername,
-    orderBuild: quote.orderBuild || defaultOrderBuild(quote),
-    buildStatus: quote.buildStatus || "",
-  };
-  writeSavedQuotes(quotes.map((item) => (item.id === quoteId ? orderQuote : item)));
-  await syncQuoteToSharedStorage(orderQuote);
-  renderSavedQuotes();
-  renderOrders();
-  openQuoteDetail(orderQuote.id, "orders");
-}
-
-async function saveOrderBuildInfo(form) {
-  if (currentUsername !== "chris") return;
-  const quoteId = form.dataset.quoteId;
-  const quotes = readSavedQuotes();
-  const quote = quotes.find((item) => item.id === quoteId);
-  if (!quote || !isOrder(quote) || isOrderBuilt(quote)) return;
-
-  const updatedQuote = {
-    ...quote,
-    updatedAt: new Date().toISOString(),
-    orderBuild: {
-      sillItemId: form.elements.sillItemId.value,
-      extensionItemId: form.elements.extensionItemId.value,
-      quantity: Math.max(1, Number.parseInt(form.elements.quantity.value, 10) || 1),
-    },
-  };
-  writeSavedQuotes(quotes.map((item) => (item.id === quoteId ? updatedQuote : item)));
-  await syncQuoteToSharedStorage(updatedQuote);
-  renderOrders();
-  renderQuoteDetail(updatedQuote);
-}
-
-async function completeOrderBuild(quoteId) {
-  if (currentUsername !== "chris") return;
-  const quotes = readSavedQuotes();
-  const quote = quotes.find((item) => item.id === quoteId);
-  if (!quote || !isOrder(quote) || isOrderBuilt(quote)) return;
-
-  const needs = orderInventoryNeeds(quote);
-  const items = readSillInventory();
-  const missing = needs.filter((need) => {
-    const item = items.find((candidate) => candidate.id === need.itemId);
-    return !item || inventoryAvailablePieces(item) < need.quantity;
-  });
-  if (missing.length) {
-    alert(`Cannot mark built yet. Not enough stock for ${missing.map((need) => need.label).join(", ")}.`);
-    return;
-  }
-
-  needs.forEach((need) => removeInventoryPieces(items, need.itemId, need.quantity));
-  writeSillInventory(items);
-
-  const builtQuote = {
-    ...quote,
-    buildStatus: "built",
-    builtAt: new Date().toISOString(),
-    builtBy: currentUserDisplayName(),
-    builtByUsername: currentUsername,
-    orderInventoryApplied: needs,
-  };
-  writeSavedQuotes(quotes.map((item) => (item.id === quoteId ? builtQuote : item)));
-  await syncQuoteToSharedStorage(builtQuote);
-  renderOrders();
-  renderSillInventory();
-  renderQuoteDetail(builtQuote);
 }
 
 async function copyQuoteItem(quoteId) {
@@ -2036,17 +1455,6 @@ async function copyQuoteItem(quoteId) {
     createdBy: currentUserDisplayName(),
     createdByUsername: currentUsername,
     copiedFrom: quote.quoteNumber,
-    orderStatus: "",
-    orderNumber: "",
-    orderedAt: "",
-    orderedBy: "",
-    orderedByUsername: "",
-    orderBuild: null,
-    buildStatus: "",
-    builtAt: "",
-    builtBy: "",
-    builtByUsername: "",
-    orderInventoryApplied: [],
   };
 
   writeSavedQuotes([...quotes, copiedQuote]);
@@ -2071,10 +1479,9 @@ async function deleteQuoteItem(quoteId) {
   }
 }
 
-function openQuoteDetail(quoteId, returnView = "quotes") {
+function openQuoteDetail(quoteId) {
   const quote = readSavedQuotes().find((item) => item.id === quoteId);
   if (!quote) return;
-  quoteDetailReturnView = returnView;
   renderQuoteDetail(quote);
   setActiveView("quoteDetail");
 }
@@ -2755,34 +2162,24 @@ document.getElementById("priceButton").addEventListener("click", () => {
 });
 
 function setActiveView(view) {
-  if (view === "inventory" && currentUsername !== "chris") view = "quotes";
   const quoteActive = view === "quote";
   const quotesActive = view === "quotes";
-  const inventoryActive = view === "inventory";
-  const ordersActive = view === "orders";
   const customerActive = view === "customer";
   const quoteDetailActive = view === "quoteDetail";
   const quoteWorkflowActive = ["builder", "quote"].includes(view);
   document.getElementById("quotesPage").hidden = !quotesActive;
-  document.getElementById("inventoryPage").hidden = !inventoryActive;
-  document.getElementById("ordersPage").hidden = !ordersActive;
   document.getElementById("customerPage").hidden = !customerActive;
   document.getElementById("quoteDetailPage").hidden = !quoteDetailActive;
-  document.getElementById("builderView").hidden = quoteActive || quotesActive || inventoryActive || ordersActive || customerActive || quoteDetailActive;
+  document.getElementById("builderView").hidden = quoteActive || quotesActive || customerActive || quoteDetailActive;
   document.getElementById("quoteView").hidden = !quoteActive;
-  document.querySelector(".disclaimer").hidden = quoteActive || quotesActive || inventoryActive || ordersActive || customerActive || quoteDetailActive;
+  document.querySelector(".disclaimer").hidden = quoteActive || quotesActive || customerActive || quoteDetailActive;
   document.querySelector(".toolbar").hidden = !quoteWorkflowActive;
   document.querySelector(".toolbar-left").hidden = !quoteWorkflowActive;
   document.querySelector(".view-tabs").hidden = !quoteWorkflowActive;
   document.getElementById("builderTab").classList.toggle("active", view === "builder");
   document.getElementById("quoteTab").classList.toggle("active", quoteActive);
-  document.getElementById("quotesLink").classList.toggle("active", quotesActive || customerActive || (quoteDetailActive && quoteDetailReturnView !== "orders"));
-  document.getElementById("inventoryLink").hidden = currentUsername !== "chris";
-  document.getElementById("inventoryLink").classList.toggle("active", inventoryActive);
-  document.getElementById("ordersLink").classList.toggle("active", ordersActive || (quoteDetailActive && quoteDetailReturnView === "orders"));
+  document.getElementById("quotesLink").classList.toggle("active", quotesActive || customerActive || quoteDetailActive);
   if (quotesActive) renderSavedQuotes();
-  if (inventoryActive) renderSillInventory();
-  if (ordersActive) renderOrders();
   if (quoteActive) updateQuoteSheet();
 }
 
@@ -2801,8 +2198,6 @@ async function setAuthenticated(isAuthenticated) {
     setActiveView("quotes");
   } else {
     document.getElementById("quotesPage").hidden = true;
-    document.getElementById("inventoryPage").hidden = true;
-    document.getElementById("ordersPage").hidden = true;
     document.getElementById("customerPage").hidden = true;
     document.getElementById("quoteDetailPage").hidden = true;
     document.getElementById("builderView").hidden = true;
@@ -2842,54 +2237,8 @@ document.getElementById("quotesLink").addEventListener("click", (event) => {
   event.preventDefault();
   setActiveView("quotes");
 });
-document.getElementById("inventoryLink").addEventListener("click", (event) => {
-  event.preventDefault();
-  setActiveView("inventory");
-});
-document.getElementById("ordersLink").addEventListener("click", (event) => {
-  event.preventDefault();
-  setActiveView("orders");
-});
 document.getElementById("quoteSearch").addEventListener("input", renderSavedQuotes);
-document.getElementById("orderSearch").addEventListener("input", renderOrders);
 document.getElementById("newQuoteBtn").addEventListener("click", startNewQuote);
-document.getElementById("receiveInventoryForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-  receiveInventory(
-    document.getElementById("receiveInventoryItem").value,
-    document.getElementById("receiveFullSticks").value,
-    document.getElementById("receiveLoosePieces").value
-  );
-  document.getElementById("receiveFullSticks").value = "0";
-  document.getElementById("receiveLoosePieces").value = "0";
-});
-document.getElementById("useInventoryForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-  useInventoryPieces(document.getElementById("useInventoryItem").value, document.getElementById("useInventoryQuantity").value);
-  document.getElementById("useInventoryQuantity").value = "1";
-});
-document.getElementById("inventoryTableBody").addEventListener("change", (event) => {
-  const input = event.target.closest(".inventory-count");
-  if (!input) return;
-  updateInventoryCount(input.dataset.inventoryId, input.dataset.field, input.value);
-});
-document.getElementById("inventoryTableBody").addEventListener("click", (event) => {
-  const button = event.target.closest(".inventory-orders-btn");
-  const row = event.target.closest(".inventory-list-item");
-  const inventoryId = button?.dataset.inventoryId || row?.dataset.inventoryId;
-  if (!inventoryId || event.target.closest("input")) return;
-  activeInventoryDetailId = inventoryId;
-  renderSillInventory();
-});
-document.getElementById("inventoryDetail").addEventListener("click", (event) => {
-  const openButton = event.target.closest(".inventory-open-order");
-  if (openButton) {
-    openQuoteDetail(openButton.dataset.quoteId, "orders");
-    return;
-  }
-  const builtButton = event.target.closest(".item-order-built");
-  if (builtButton) completeOrderBuild(builtButton.dataset.quoteId);
-});
 document.getElementById("addItemBtn").addEventListener("click", () => {
   activeQuoteCustomer = customerDetails();
   activeQuoteId = null;
@@ -2897,17 +2246,12 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   setActiveView("builder");
 });
 document.getElementById("detailAddItemBtn").addEventListener("click", () => addItemForCustomer(activeQuoteCustomer));
-document.getElementById("backToQuotesBtn").addEventListener("click", () => setActiveView(quoteDetailReturnView));
+document.getElementById("backToQuotesBtn").addEventListener("click", () => setActiveView("quotes"));
 document.getElementById("saveQuoteBtn").addEventListener("click", saveCurrentQuote);
 document.getElementById("quotesList").addEventListener("click", (event) => {
   const button = event.target.closest(".quote-open, .quote-number-link");
   if (!button) return;
-  openQuoteDetail(button.dataset.quoteId, "quotes");
-});
-document.getElementById("ordersList").addEventListener("click", (event) => {
-  const button = event.target.closest(".quote-open, .quote-number-link");
-  if (!button) return;
-  openQuoteDetail(button.dataset.quoteId, "orders");
+  openQuoteDetail(button.dataset.quoteId);
 });
 document.getElementById("quoteItemsList").addEventListener("click", (event) => {
   const openButton = event.target.closest(".item-open");
@@ -2923,26 +2267,8 @@ document.getElementById("quoteItemsList").addEventListener("click", (event) => {
     return;
   }
 
-  const orderButton = event.target.closest(".item-order");
-  if (orderButton) {
-    makeQuoteOrder(orderButton.dataset.quoteId);
-    return;
-  }
-
-  const builtButton = event.target.closest(".item-order-built");
-  if (builtButton) {
-    completeOrderBuild(builtButton.dataset.quoteId);
-    return;
-  }
-
   const deleteButton = event.target.closest(".item-delete");
   if (deleteButton) deleteQuoteItem(deleteButton.dataset.quoteId);
-});
-document.getElementById("quoteItemsList").addEventListener("submit", (event) => {
-  const form = event.target.closest(".order-build-form");
-  if (!form) return;
-  event.preventDefault();
-  saveOrderBuildInfo(form);
 });
 document.getElementById("notes").addEventListener("input", updateQuoteSheet);
 customerFields.forEach((id) => document.getElementById(id).addEventListener("input", updateQuoteSheet));

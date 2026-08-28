@@ -1343,6 +1343,12 @@ h1 {
   --lite-top: 25px;
 }
 
+.glass.lite-size-22x12 {
+  --lite-width: 68px;
+  --lite-height: 40px;
+  --lite-top: 22px;
+}
+
 .glass.lite-size-22x17 {
   --lite-width: 68px;
   --lite-height: 52px;
@@ -1407,6 +1413,53 @@ h1 {
   --glass-bg-size-y: 110%;
   --glass-bg-x: -2px;
   --glass-bg-y: -4px;
+}
+
+/* Custom clear/frosted glass needs panel-specific aperture sizing on steel slabs. */
+.glass.custom.lite-size-22x36.panel-steel-6-panel,
+.glass.custom.lite-size-22x36.panel-steel-4-panel,
+.glass.custom.lite-size-22x36.panel-steel-london {
+  --panel-lite-offset: -8px;
+  --lite-width: 72px;
+  --lite-height: 126px;
+}
+
+.glass.custom.lite-size-22x10.panel-steel-6-panel,
+.glass.custom.lite-size-22x10.panel-steel-4-panel {
+  --panel-lite-offset: -8px;
+  --lite-width: 72px;
+  --lite-height: 40px;
+}
+
+.glass.custom.lite-size-22x17.panel-steel-sydney {
+  --panel-lite-offset: -8px;
+  --lite-width: 72px;
+  --lite-height: 56px;
+}
+
+.glass.custom.lite-size-22x14-7-16.panel-steel-victoria {
+  --panel-lite-offset: -3px;
+  --lite-width: 72px;
+  --lite-height: 56px;
+}
+
+.glass.custom.lite-size-22x12.panel-steel-soho {
+  --panel-lite-offset: -5px;
+  --lite-width: 72px;
+  --lite-height: 43px;
+}
+
+.glass.custom.lite-size-22x48.panel-steel-3-panel-scroll,
+.glass.custom.lite-size-22x48.panel-steel-orleans,
+.glass.custom.lite-size-22x48.panel-steel-soho {
+  --panel-lite-offset: -14px;
+  --panel-lite-x-offset: 0px;
+  --lite-width: 76px;
+  --lite-height: 174px;
+  --glass-bg-size-x: 100%;
+  --glass-bg-size-y: 100%;
+  --glass-bg-x: 0px;
+  --glass-bg-y: 0px;
 }
 
 .panel-lines {

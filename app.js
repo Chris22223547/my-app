@@ -506,6 +506,9 @@ const panelLiteSizeOptions = {
     ["22x36", "22 x 36"],
     ["22x10", "22 x 10"],
   ],
+  "steel-3-panel-scroll": [
+    ["22x48", "22 x 48"],
+  ],
   "steel-orleans": [
     ["22x48", "22 x 48"],
   ],

@@ -1559,13 +1559,15 @@ function updateRedSheetTotals() {
   );
   const hst = roundCurrency(subtotal * 0.13);
   const total = roundCurrency(subtotal + hst);
-  const deposit = roundCurrency(redSheetAmountValue(document.getElementById("redDeposit")));
+  const depositElement = document.getElementById("redDeposit");
+  const hasDeposit = depositElement.textContent.trim() !== "";
+  const deposit = roundCurrency(redSheetAmountValue(depositElement));
   const balance = roundCurrency(total - deposit);
 
   setRedSheetText("redSubtotal", currency.format(subtotal));
   setRedSheetText("redHst", currency.format(hst));
   setRedSheetText("redTotal", currency.format(total));
-  setRedSheetText("redBalance", currency.format(balance));
+  setRedSheetText("redBalance", hasDeposit ? currency.format(balance) : "");
 }
 
 function formatRedSheetAmount(element) {
@@ -1616,7 +1618,13 @@ function createRedSheet() {
   setRedSheetText("redCustomerPhone", customer.customerPhone);
   setRedSheetText("redCustomerEmail", customer.customerEmail);
   setRedSheetText("redConsultant", currentUserDisplayName());
-  setRedSheetText("redDate", new Date().toLocaleDateString("en-CA"));
+  setRedSheetText(
+    "redDate",
+    new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+  );
+  document.querySelectorAll(".red-positionable-field").forEach((element) => {
+    element.style.removeProperty("padding-left");
+  });
   [
     "redLeadTime",
     "redPostalCode",
@@ -1631,7 +1639,12 @@ function createRedSheet() {
     "redAlarmsAmount",
     "redBlinds",
     "redBlindsAmount",
-    "redNotes",
+    "redNotesLine1",
+    "redNotesLine2",
+    "redNotesLine3",
+    "redWarrantyDoors",
+    "redWarrantyGlass",
+    "redWarrantyOther",
     "redDeposit",
   ].forEach((id) => setRedSheetText(id));
 
@@ -2517,18 +2530,23 @@ document.getElementById("printRedSheetBtn").addEventListener("click", async () =
   const images = [...document.querySelectorAll("#redSheetPage img")];
   await Promise.all(
     images.map(async (image) => {
-      if (!image.complete) {
+      if (image.getAttribute("src") && (!image.complete || !image.naturalWidth)) {
         await new Promise((resolve) => {
-          image.addEventListener("load", resolve, { once: true });
-          image.addEventListener("error", resolve, { once: true });
+          const timeout = window.setTimeout(resolve, 2500);
+          const finish = () => {
+            window.clearTimeout(timeout);
+            resolve();
+          };
+          image.addEventListener("load", finish, { once: true });
+          image.addEventListener("error", finish, { once: true });
         });
       }
-      if (image.decode) await image.decode().catch(() => {});
     }),
   );
   previousPrintTitle = document.title;
   document.title = `Red Sheet - ${document.getElementById("redCustomerName").textContent.trim() || "Customer"}`;
   document.body.classList.add("printing-red-sheet");
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   window.print();
 });
 document.getElementById("redSheet").addEventListener("input", (event) => {
@@ -2549,10 +2567,10 @@ document.getElementById("redSheet").addEventListener("keydown", (event) => {
   event.target.blur();
 });
 document.getElementById("redSheet").addEventListener("pointerdown", (event) => {
-  const line = event.target.closest(".red-line-description");
+  const line = event.target.closest(".red-line-description, .red-positionable-field");
   if (!line || line.textContent.trim()) return;
   const bounds = line.getBoundingClientRect();
-  const clickPosition = Math.min(Math.max(event.clientX - bounds.left, 7), bounds.width - 20);
+  const clickPosition = Math.min(Math.max(event.clientX - bounds.left, 4), Math.max(4, bounds.width - 12));
   line.style.paddingLeft = `${clickPosition}px`;
 });
 Object.values(detailCustomerFields).forEach((id) => {

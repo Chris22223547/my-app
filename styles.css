@@ -579,7 +579,8 @@ button {
 
 .red-editable:focus,
 .red-line-description:focus,
-.red-line-amount:focus {
+.red-line-amount:focus,
+.red-positionable-field:focus {
   background: rgba(255, 247, 174, 0.72);
   box-shadow: inset 0 0 0 1px rgba(23, 69, 111, 0.4);
 }
@@ -665,18 +666,40 @@ button {
 .red-blinds-amount { top: 725px; }
 
 .red-extra {
-  left: 230px;
-  width: 430px;
+  left: 26px;
+  width: 660px;
   height: 25px;
   padding: 6px 4px 2px;
   white-space: nowrap;
 }
 
 .red-jamb-trim { top: 650px; }
-.red-trim-type { top: 675px; left: 110px; width: 550px; }
+.red-trim-type { top: 675px; }
 .red-alarms { top: 700px; }
 .red-blinds { top: 725px; }
-.red-notes { left: 78px; top: 750px; width: 535px; height: 50px; }
+
+.red-note-line {
+  left: 26px;
+  width: 587px;
+  height: 25px;
+  padding: 6px 4px 2px;
+  white-space: nowrap;
+}
+
+.red-note-line-1 { top: 750px; }
+.red-note-line-2 { top: 775px; }
+.red-note-line-3 { top: 800px; }
+
+.red-warranty-field {
+  top: 850px;
+  height: 25px;
+  padding: 6px 2px 2px;
+  white-space: nowrap;
+}
+
+.red-warranty-doors { left: 355px; width: 66px; }
+.red-warranty-glass { left: 446px; width: 60px; }
+.red-warranty-other { left: 538px; width: 62px; }
 
 .red-total-value {
   left: 691px;
@@ -2207,7 +2230,8 @@ body.print-no-pricing .quote-total-row {
   }
 
   body.printing-red-sheet .red-sheet {
-    margin: 0;
+    zoom: 0.95;
+    margin: 0 auto;
     box-shadow: none;
   }
 
@@ -2217,7 +2241,8 @@ body.print-no-pricing .quote-total-row {
   }
 
   body.printing-red-sheet .red-sheet-quote-pages .quote-sheet {
-    margin: 0;
+    zoom: 0.95;
+    margin: 0 auto;
     break-before: page;
     page-break-before: always;
     box-shadow: none;

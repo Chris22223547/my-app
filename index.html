@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>West Built Door Builder</title>
-    <link rel="stylesheet" href="styles.css?v=red-sheet-v7" />
+    <link rel="stylesheet" href="styles.css?v=red-sheet-positioning-v1" />
   </head>
   <body>
     <section class="login-view" id="loginView" aria-label="Login">
@@ -163,15 +163,20 @@
           <div class="red-editable red-field red-other" contenteditable="true" id="redOther"></div>
           <div class="red-editable red-field red-email" contenteditable="true" id="redCustomerEmail"></div>
           <div class="red-sheet-line-items" id="redSheetLineItems"></div>
-          <div class="red-editable red-extra red-jamb-trim" contenteditable="true" id="redJambTrim"></div>
+          <div class="red-editable red-extra red-positionable-field red-jamb-trim" contenteditable="true" id="redJambTrim"></div>
           <div class="red-editable red-extra-amount red-jamb-trim-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redJambTrimAmount"></div>
-          <div class="red-editable red-extra red-trim-type" contenteditable="true" id="redTrimType"></div>
+          <div class="red-editable red-extra red-positionable-field red-trim-type" contenteditable="true" id="redTrimType"></div>
           <div class="red-editable red-extra-amount red-trim-type-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redTrimTypeAmount"></div>
-          <div class="red-editable red-extra red-alarms" contenteditable="true" id="redAlarms"></div>
+          <div class="red-editable red-extra red-positionable-field red-alarms" contenteditable="true" id="redAlarms"></div>
           <div class="red-editable red-extra-amount red-alarms-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redAlarmsAmount"></div>
-          <div class="red-editable red-extra red-blinds" contenteditable="true" id="redBlinds"></div>
+          <div class="red-editable red-extra red-positionable-field red-blinds" contenteditable="true" id="redBlinds"></div>
           <div class="red-editable red-extra-amount red-blinds-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redBlindsAmount"></div>
-          <div class="red-editable red-extra red-notes" contenteditable="true" id="redNotes"></div>
+          <div class="red-editable red-note-line red-positionable-field red-note-line-1" contenteditable="true" id="redNotesLine1"></div>
+          <div class="red-editable red-note-line red-positionable-field red-note-line-2" contenteditable="true" id="redNotesLine2"></div>
+          <div class="red-editable red-note-line red-positionable-field red-note-line-3" contenteditable="true" id="redNotesLine3"></div>
+          <div class="red-editable red-warranty-field red-positionable-field red-warranty-doors" contenteditable="true" id="redWarrantyDoors"></div>
+          <div class="red-editable red-warranty-field red-positionable-field red-warranty-glass" contenteditable="true" id="redWarrantyGlass"></div>
+          <div class="red-editable red-warranty-field red-positionable-field red-warranty-other" contenteditable="true" id="redWarrantyOther"></div>
           <div class="red-editable red-total-value red-subtotal" id="redSubtotal"></div>
           <div class="red-editable red-total-value red-hst" id="redHst"></div>
           <div class="red-editable red-total-value red-total" id="redTotal"></div>
@@ -1042,6 +1047,6 @@
     </main>
 
     <script src="supabase-config.js?v=unique-custom-color-v1"></script>
-    <script src="app.js?v=combined-drawing-fix-v1"></script>
+    <script src="app.js?v=red-sheet-positioning-v1"></script>
   </body>
 </html>

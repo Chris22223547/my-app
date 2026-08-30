@@ -337,6 +337,12 @@ button {
   padding: 10px 14px;
 }
 
+.customer-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
 .customer-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -432,6 +438,75 @@ button {
 .quote-items-list {
   display: grid;
   gap: 12px;
+}
+
+.saved-red-sheets {
+  margin-top: 26px;
+  padding-top: 24px;
+  border-top: 1px solid #d9e0e6;
+}
+
+.saved-red-sheets-header h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.saved-red-sheets-header p {
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+.saved-red-sheets-list {
+  display: grid;
+  gap: 10px;
+}
+
+.saved-red-sheet-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  background: #f9fbfc;
+  border: 1px solid #d9e0e6;
+}
+
+.saved-red-sheet-row strong,
+.saved-red-sheet-row span {
+  display: block;
+}
+
+.saved-red-sheet-row span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.saved-red-sheet-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.saved-red-sheet-actions button {
+  border: 0;
+  padding: 9px 12px;
+  color: #fff;
+  background: var(--blue);
+  font-weight: 800;
+}
+
+.saved-red-sheet-actions .saved-red-sheet-delete {
+  border: 1px solid #d6a29a;
+  color: #9f2f22;
+  background: #fff5f3;
+}
+
+.saved-red-sheets-empty {
+  margin: 0;
+  padding: 14px 16px;
+  color: var(--muted);
+  background: #f9fbfc;
+  border: 1px dashed #cbd4dc;
 }
 
 .quote-item-row {
@@ -530,10 +605,24 @@ button {
 
 .red-sheet-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 10px;
   width: 8.5in;
   margin: 0 auto 12px;
+}
+
+.red-sheet-save-state {
+  display: grid;
+  gap: 2px;
+  margin-right: auto;
+  color: #173f62;
+}
+
+.red-sheet-save-state span {
+  min-height: 16px;
+  color: #4f6475;
+  font-size: 12px;
 }
 
 .red-sheet-actions button {
@@ -734,6 +823,23 @@ button {
 }
 
 @media (max-width: 700px) {
+  .customer-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customer-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .saved-red-sheet-row {
+    grid-template-columns: 1fr;
+  }
+
+  .saved-red-sheet-actions {
+    flex-wrap: wrap;
+  }
+
   .detail-customer-editor-header {
     display: grid;
   }

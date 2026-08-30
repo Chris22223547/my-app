@@ -48,7 +48,7 @@
         <div class="quotes-header">
           <div>
             <h1>Quotes</h1>
-            <p>Saved door quotes appear here.</p>
+            <p>Saved door quotes and Red Sheets appear here.</p>
           </div>
           <button type="button" id="newQuoteBtn">New Quote</button>
         </div>
@@ -66,7 +66,10 @@
               <h1>Customer Information</h1>
               <p>Enter customer details before adding a door item.</p>
             </div>
-            <button type="button" id="addItemBtn">Add Item</button>
+            <div class="customer-header-actions">
+              <button type="button" id="createCustomerRedSheetBtn">Create Red Sheet</button>
+              <button type="button" id="addItemBtn">Add Item</button>
+            </div>
           </div>
           <div class="customer-form">
             <label>
@@ -107,6 +110,15 @@
             </div>
           </div>
           <div class="quote-items-list" id="quoteItemsList"></div>
+          <section class="saved-red-sheets" aria-labelledby="savedRedSheetsHeading">
+            <div class="saved-red-sheets-header">
+              <div>
+                <h2 id="savedRedSheetsHeading">Saved Red Sheets</h2>
+                <p>Red Sheets save automatically and can be reopened for changes.</p>
+              </div>
+            </div>
+            <div class="saved-red-sheets-list" id="savedRedSheetsList"></div>
+          </section>
           <section class="detail-customer-editor" aria-labelledby="detailCustomerEditorHeading">
             <div class="detail-customer-editor-header">
               <div>
@@ -143,7 +155,12 @@
 
       <section class="red-sheet-page" id="redSheetPage" hidden>
         <div class="red-sheet-actions">
+          <div class="red-sheet-save-state">
+            <strong id="activeRedSheetNumber">Red Sheet</strong>
+            <span id="redSheetSaveStatus" role="status"></span>
+          </div>
           <button type="button" id="backFromRedSheetBtn">Back to Quote</button>
+          <button type="button" id="refreshRedSheetPricingBtn">Update Door Pricing</button>
           <button type="button" id="printRedSheetBtn">Print Red Sheet</button>
         </div>
         <div class="red-sheet" id="redSheet">

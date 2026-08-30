@@ -559,6 +559,7 @@ const currency = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 const savedQuotesKey = "westBuiltDoorBuilderQuotes";
+const savedRedSheetsKey = "westBuiltDoorBuilderRedSheets";
 const customerFields = ["customerName", "customerPhone", "customerAddress", "customerEmail", "customerCity"];
 const detailCustomerFields = {
   customerName: "detailCustomerNameInput",
@@ -579,13 +580,26 @@ let activeQuoteCustomer = null;
 let activeQuoteId = null;
 let currentUsername = sessionStorage.getItem("westBuiltDoorBuilderUser") || "";
 let savedQuotesCache = [];
+let savedRedSheetsCache = [];
 let detailCustomerSaveTimer = null;
 let detailCustomerSaveVersion = 0;
 let redSheetReturnQuoteId = null;
+let redSheetReturnCustomerKey = "";
+let activeRedSheetId = null;
+let redSheetSaveTimer = null;
+let redSheetSaveVersion = 0;
 
 function localQuotes() {
   try {
     return JSON.parse(localStorage.getItem(savedQuotesKey) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function localRedSheets() {
+  try {
+    return JSON.parse(localStorage.getItem(savedRedSheetsKey) || "[]");
   } catch {
     return [];
   }
@@ -632,7 +646,8 @@ async function sharedStorageRequest(path, options = {}) {
   });
   if (!response.ok) throw new Error(`Shared storage request failed: ${response.status}`);
   if (response.status === 204) return null;
-  return response.json();
+  const responseText = await response.text();
+  return responseText ? JSON.parse(responseText) : null;
 }
 
 async function loadSavedQuotes() {
@@ -647,6 +662,20 @@ async function loadSavedQuotes() {
     console.warn("Using local quotes because shared storage could not be loaded.", error);
   }
   return savedQuotesCache;
+}
+
+async function loadSavedRedSheets() {
+  savedRedSheetsCache = localRedSheets();
+  if (!sharedStorageEnabled()) return savedRedSheetsCache;
+
+  try {
+    const rows = await sharedStorageRequest("red_sheets?select=red_sheet_data&order=updated_at.desc");
+    savedRedSheetsCache = rows.map((row) => row.red_sheet_data).filter(Boolean);
+    localStorage.setItem(savedRedSheetsKey, JSON.stringify(savedRedSheetsCache));
+  } catch (error) {
+    console.warn("Using local Red Sheets because shared storage could not be loaded.", error);
+  }
+  return savedRedSheetsCache;
 }
 
 async function syncQuoteToSharedStorage(quote) {
@@ -671,6 +700,45 @@ async function deleteQuoteFromSharedStorage(quoteId) {
     });
   } catch (error) {
     console.warn("Quote was deleted locally, but shared storage delete failed.", error);
+  }
+}
+
+function redSheetToDatabaseRow(redSheet) {
+  return {
+    id: redSheet.id,
+    red_sheet_number: redSheet.redSheetNumber,
+    customer_key: redSheet.customerKey || "",
+    customer: redSheet.customer || {},
+    created_at: redSheet.createdAt,
+    updated_at: redSheet.updatedAt || new Date().toISOString(),
+    created_by: redSheet.createdBy || "",
+    created_by_username: redSheet.createdByUsername || "",
+    red_sheet_data: redSheet,
+  };
+}
+
+async function syncRedSheetToSharedStorage(redSheet) {
+  if (!sharedStorageEnabled()) return;
+  try {
+    await sharedStorageRequest("red_sheets?on_conflict=id", {
+      method: "POST",
+      headers: { Prefer: "resolution=merge-duplicates" },
+      body: JSON.stringify(redSheetToDatabaseRow(redSheet)),
+    });
+  } catch (error) {
+    console.warn("Red Sheet was saved locally, but shared storage sync failed.", error);
+  }
+}
+
+async function deleteRedSheetFromSharedStorage(redSheetId) {
+  if (!sharedStorageEnabled()) return;
+  try {
+    await sharedStorageRequest(`red_sheets?id=eq.${encodeURIComponent(redSheetId)}`, {
+      method: "DELETE",
+      headers: { Prefer: "return=minimal" },
+    });
+  } catch (error) {
+    console.warn("Red Sheet was deleted locally, but shared storage delete failed.", error);
   }
 }
 
@@ -1174,6 +1242,15 @@ function writeSavedQuotes(quotes) {
   localStorage.setItem(savedQuotesKey, JSON.stringify(quotes));
 }
 
+function readSavedRedSheets() {
+  return savedRedSheetsCache;
+}
+
+function writeSavedRedSheets(redSheets) {
+  savedRedSheetsCache = redSheets;
+  localStorage.setItem(savedRedSheetsKey, JSON.stringify(redSheets));
+}
+
 function customerDetails() {
   return Object.fromEntries(customerFields.map((id) => [id, document.getElementById(id).value.trim()]));
 }
@@ -1352,13 +1429,14 @@ function escapeHtml(value) {
 }
 
 function quoteTimestamp(quote) {
-  return new Date(quote.updatedAt || quote.date || 0).getTime() || 0;
+  return new Date(quote.updatedAt || quote.date || quote.createdAt || 0).getTime() || 0;
 }
 
 function quoteMatchesQuery(quote, query) {
   const customer = quote.customer || {};
   return [
     quote.quoteNumber,
+    quote.redSheetNumber,
     quote.title,
     customer.customerName,
     customer.customerPhone,
@@ -1375,19 +1453,29 @@ function groupedCustomerQuotes(quotes) {
   const groups = new Map();
   quotes.forEach((quote) => {
     const key = quote.customerKey || customerKey(quote.customer) || quote.id;
-    const group = groups.get(key) || { key, items: [] };
+    const group = groups.get(key) || { key, items: [], redSheets: [] };
     group.items.push(quote);
+    groups.set(key, group);
+  });
+  readSavedRedSheets().forEach((redSheet) => {
+    const key = redSheet.customerKey || customerKey(redSheet.customer) || redSheet.id;
+    const group = groups.get(key) || { key, items: [], redSheets: [] };
+    group.redSheets.push(redSheet);
     groups.set(key, group);
   });
   return [...groups.values()].map((group) => {
     const items = group.items.sort((a, b) => quoteTimestamp(b) - quoteTimestamp(a));
-    const primary = items[0];
+    const redSheets = group.redSheets.sort((a, b) => quoteTimestamp(b) - quoteTimestamp(a));
+    const primary = items[0] || null;
+    const redSheetPrimary = redSheets[0] || null;
     return {
       ...group,
       items,
+      redSheets,
       primary,
+      redSheetPrimary,
       total: items.reduce((sum, item) => sum + (Number(item.total) || 0), 0),
-      latestTimestamp: quoteTimestamp(primary),
+      latestTimestamp: Math.max(quoteTimestamp(primary || {}), quoteTimestamp(redSheetPrimary || {})),
     };
   });
 }
@@ -1398,10 +1486,14 @@ function renderSavedQuotes() {
   const query = document.getElementById("quoteSearch").value.trim().toLowerCase();
   const customerGroups = groupedCustomerQuotes(quotes).sort((a, b) => b.latestTimestamp - a.latestTimestamp);
   const filteredGroups = query
-    ? customerGroups.filter((group) => group.items.some((quote) => quoteMatchesQuery(quote, query)))
+    ? customerGroups.filter(
+        (group) =>
+          group.items.some((quote) => quoteMatchesQuery(quote, query)) ||
+          group.redSheets.some((redSheet) => quoteMatchesQuery(redSheet, query)),
+      )
     : customerGroups;
-  if (!quotes.length) {
-    list.innerHTML = '<div class="quotes-empty">No saved quotes yet. Start a new quote, then use Save Quote to add it here.</div>';
+  if (!customerGroups.length) {
+    list.innerHTML = '<div class="quotes-empty">No saved quotes or Red Sheets yet.</div>';
     return;
   }
   if (!filteredGroups.length) {
@@ -1412,17 +1504,22 @@ function renderSavedQuotes() {
   list.innerHTML = filteredGroups
     .map(
       (group) => {
-        const quote = group.primary;
-        const customerName = quote.customer?.customerName || quote.title || "No customer name";
-        const quoteDate = quote.date ? new Date(quote.date).toLocaleDateString("en-CA") : "";
-        const createdBy = quote.createdBy || "Unknown";
-        const itemLabel = group.items.length === 1 ? "1 item" : `${group.items.length} items`;
+        const source = group.primary || group.redSheetPrimary;
+        const customerName = source.customer?.customerName || source.title || "No customer name";
+        const sourceDate = source.date || source.createdAt;
+        const quoteDate = sourceDate ? new Date(sourceDate).toLocaleDateString("en-CA") : "";
+        const createdBy = source.createdBy || "Unknown";
+        const itemLabel = group.items.length === 0 ? "No door items" : group.items.length === 1 ? "1 item" : `${group.items.length} items`;
+        const redSheetLabel = group.redSheets.length === 1 ? "1 Red Sheet" : `${group.redSheets.length} Red Sheets`;
+        const groupSummary = group.redSheets.length ? `${itemLabel} - ${redSheetLabel}` : itemLabel;
+        const rowNumber = group.primary?.quoteNumber || group.redSheetPrimary?.redSheetNumber || "Customer";
+        const quoteIdAttribute = group.primary ? ` data-quote-id="${escapeHtml(group.primary.id)}"` : "";
         return `<article class="quote-list-item">
-        <button class="quote-number-link quote-row-number" type="button" data-quote-id="${escapeHtml(quote.id)}">${escapeHtml(quote.quoteNumber)}</button>
+        <button class="quote-number-link quote-row-number" type="button"${quoteIdAttribute} data-customer-key="${escapeHtml(group.key)}">${escapeHtml(rowNumber)}</button>
         <span class="quote-row-name">${escapeHtml(customerName)}</span>
         <span class="quote-row-date">${escapeHtml(quoteDate)}</span>
-        <span class="quote-row-created">Created by ${escapeHtml(createdBy)} - ${escapeHtml(itemLabel)}</span>
-        <button class="quote-open" type="button" data-quote-id="${escapeHtml(quote.id)}">View</button>
+        <span class="quote-row-created">Created by ${escapeHtml(createdBy)} - ${escapeHtml(groupSummary)}</span>
+        <button class="quote-open" type="button"${quoteIdAttribute} data-customer-key="${escapeHtml(group.key)}">View</button>
       </article>`;
       },
     )
@@ -1489,6 +1586,47 @@ function savedExteriorFinish(values = {}) {
   return [...paintColors, ...stainColors].find(([value]) => value === values.finish)?.[1] || "Color not selected";
 }
 
+function matchingCustomerRedSheets(customerKeyValue) {
+  return readSavedRedSheets()
+    .filter((redSheet) => redSheet.customerKey === customerKeyValue)
+    .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+}
+
+function renderSavedRedSheets(customerKeyValue) {
+  const list = document.getElementById("savedRedSheetsList");
+  if (!list) return;
+  const redSheets = matchingCustomerRedSheets(customerKeyValue);
+  if (!redSheets.length) {
+    list.innerHTML = '<p class="saved-red-sheets-empty">No saved Red Sheets for this customer yet.</p>';
+    return;
+  }
+
+  list.innerHTML = redSheets
+    .map((redSheet) => {
+      const updated = redSheet.updatedAt
+        ? new Date(redSheet.updatedAt).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" })
+        : "";
+      const doorCount = redSheet.selectedQuoteIds?.length || 0;
+      const doorLabel = doorCount === 1 ? "1 door attached" : `${doorCount} doors attached`;
+      return `<article class="saved-red-sheet-row">
+        <div>
+          <strong>${escapeHtml(redSheet.redSheetNumber || "Red Sheet")}</strong>
+          <span>${escapeHtml(doorLabel)}</span>
+        </div>
+        <div>
+          <strong>${escapeHtml(redSheet.createdBy || "Unknown")}</strong>
+          <span>Updated ${escapeHtml(updated)}</span>
+        </div>
+        <div class="saved-red-sheet-actions">
+          <button type="button" class="saved-red-sheet-open" data-red-sheet-id="${escapeHtml(redSheet.id)}">Open</button>
+          <button type="button" class="saved-red-sheet-copy" data-red-sheet-id="${escapeHtml(redSheet.id)}">Copy</button>
+          <button type="button" class="saved-red-sheet-delete" data-red-sheet-id="${escapeHtml(redSheet.id)}">Delete</button>
+        </div>
+      </article>`;
+    })
+    .join("");
+}
+
 function renderQuoteDetail(quote) {
   activeQuoteCustomer = quote.customer || null;
   const customer = quote.customer || {};
@@ -1504,6 +1642,7 @@ function renderQuoteDetail(quote) {
   const detailPage = document.getElementById("quoteDetailPage");
   detailPage.dataset.customerKey = quote.customerKey || customerKey(customer) || quote.id;
   detailPage.dataset.quoteId = quote.id;
+  renderSavedRedSheets(detailPage.dataset.customerKey);
   document.getElementById("detailCustomerSaveStatus").hidden = true;
   document.getElementById("quoteItemsList").innerHTML = items
     .map(
@@ -1604,70 +1743,262 @@ function buildRedSheetQuotePages(selectedItems) {
   }
 }
 
-function createRedSheet() {
-  const selectedIds = [...document.querySelectorAll(".red-sheet-item-select:checked")].map((input) => input.value);
+const redSheetFieldIds = [
+  "redPageCurrent",
+  "redPageTotal",
+  "redCustomerName",
+  "redDate",
+  "redCustomerAddress",
+  "redLeadTime",
+  "redCustomerCity",
+  "redPostalCode",
+  "redConsultant",
+  "redCustomerPhone",
+  "redWorkPhone",
+  "redCellPhone",
+  "redOther",
+  "redCustomerEmail",
+  "redJambTrim",
+  "redJambTrimAmount",
+  "redTrimType",
+  "redTrimTypeAmount",
+  "redAlarms",
+  "redAlarmsAmount",
+  "redBlinds",
+  "redBlindsAmount",
+  "redNotesLine1",
+  "redNotesLine2",
+  "redNotesLine3",
+  "redWarrantyDoors",
+  "redWarrantyGlass",
+  "redWarrantyOther",
+  "redDeposit",
+];
+
+function generateRedSheetNumber() {
+  const existing = new Set(readSavedRedSheets().map((redSheet) => redSheet.redSheetNumber));
+  let number = "";
+  do {
+    number = `RS-${Math.floor(100000 + Math.random() * 900000)}`;
+  } while (existing.has(number));
+  return number;
+}
+
+function renderRedSheetLineItems(items = []) {
+  document.getElementById("redSheetLineItems").innerHTML = Array.from({ length: 17 }, (_, index) => {
+    const item = items[index] || {};
+    const quoteId = item.quoteId ? ` data-quote-id="${escapeHtml(item.quoteId)}"` : "";
+    const padding = item.paddingLeft ? ` style="padding-left:${escapeHtml(item.paddingLeft)}"` : "";
+    return `<div class="red-line-item"${quoteId}>
+      <div class="red-line-description${item.quoteId ? " red-auto-description" : ""}" contenteditable="true" spellcheck="false"${padding}>${escapeHtml(item.description || "")}</div>
+      <div class="red-line-amount red-calculation-amount" contenteditable="true" inputmode="decimal" spellcheck="false">${escapeHtml(item.amount || "")}</div>
+    </div>`;
+  }).join("");
+}
+
+function generatedRedSheetLineItems(selectedItems) {
+  const result = Array.from({ length: 17 }, () => ({}));
+  const lineSpacing = selectedItems.length <= 4 ? 4 : Math.max(1, Math.floor(15 / Math.max(1, selectedItems.length - 1)));
+  selectedItems.forEach((item, index) => {
+    result[1 + index * lineSpacing] = {
+      quoteId: item.id,
+      description: `Supply and install door as per quote ${item.quoteNumber}`,
+      amount: currency.format(Number(item.total) || 0),
+    };
+  });
+  return result;
+}
+
+function captureRedSheetDocument() {
+  const fields = Object.fromEntries(
+    redSheetFieldIds.map((id) => {
+      const element = document.getElementById(id);
+      return [id, { text: element.textContent, paddingLeft: element.style.paddingLeft || "" }];
+    }),
+  );
+  const lineItems = [...document.querySelectorAll("#redSheetLineItems .red-line-item")].map((row) => {
+    const description = row.querySelector(".red-line-description");
+    return {
+      quoteId: row.dataset.quoteId || "",
+      description: description.textContent,
+      amount: row.querySelector(".red-line-amount").textContent,
+      paddingLeft: description.style.paddingLeft || "",
+    };
+  });
+  return { fields, lineItems };
+}
+
+function restoreRedSheetFields(fields = {}) {
+  redSheetFieldIds.forEach((id) => {
+    const element = document.getElementById(id);
+    const saved = fields[id];
+    element.textContent = saved?.text || "";
+    if (saved?.paddingLeft) element.style.paddingLeft = saved.paddingLeft;
+    else element.style.removeProperty("padding-left");
+  });
+}
+
+function setRedSheetSaveStatus(message) {
+  document.getElementById("redSheetSaveStatus").textContent = message;
+}
+
+async function saveActiveRedSheet(saveVersion = redSheetSaveVersion) {
+  const existing = readSavedRedSheets().find((redSheet) => redSheet.id === activeRedSheetId);
+  if (!existing) return;
+  const documentState = captureRedSheetDocument();
+  const updated = {
+    ...existing,
+    updatedAt: new Date().toISOString(),
+    fields: documentState.fields,
+    lineItems: documentState.lineItems,
+  };
+  writeSavedRedSheets(readSavedRedSheets().map((redSheet) => (redSheet.id === updated.id ? updated : redSheet)));
+  await syncRedSheetToSharedStorage(updated);
+  if (saveVersion !== redSheetSaveVersion) return;
+  setRedSheetSaveStatus("Saved");
+}
+
+function scheduleRedSheetSave(delay = 650) {
+  if (!activeRedSheetId) return;
+  window.clearTimeout(redSheetSaveTimer);
+  redSheetSaveVersion += 1;
+  const saveVersion = redSheetSaveVersion;
+  setRedSheetSaveStatus("Saving...");
+  redSheetSaveTimer = window.setTimeout(() => saveActiveRedSheet(saveVersion), delay);
+}
+
+function showRedSheetRecord(redSheet) {
+  activeRedSheetId = redSheet.id;
+  redSheetReturnQuoteId = redSheet.returnQuoteId || redSheet.selectedQuoteIds?.[0] || null;
+  redSheetReturnCustomerKey = redSheet.returnCustomerKey || redSheet.customerKey || "";
+  document.getElementById("activeRedSheetNumber").textContent = redSheet.redSheetNumber;
+  setRedSheetSaveStatus("Saved");
+  const selectedItems = (redSheet.selectedQuoteIds || [])
+    .map((id) => readSavedQuotes().find((quote) => quote.id === id))
+    .filter(Boolean);
+  renderRedSheetLineItems(redSheet.lineItems || []);
+  buildRedSheetQuotePages(selectedItems);
+  restoreRedSheetFields(redSheet.fields || {});
+  updateRedSheetTotals();
+  setActiveView("redSheet");
+}
+
+async function createRedSheet(options = {}) {
+  const selectedIds = options.selectedIdsOverride || [...document.querySelectorAll(".red-sheet-item-select:checked")].map((input) => input.value);
   const quotes = readSavedQuotes();
   const selectedItems = selectedIds.map((id) => quotes.find((quote) => quote.id === id)).filter(Boolean);
-  const detailQuoteId = document.getElementById("quoteDetailPage").dataset.quoteId;
+  const detailPage = document.getElementById("quoteDetailPage");
+  const detailQuoteId = options.returnQuoteIdOverride !== undefined ? options.returnQuoteIdOverride : detailPage.dataset.quoteId;
   const detailQuote = quotes.find((quote) => quote.id === detailQuoteId);
-  const customer = selectedItems[0]?.customer || detailQuote?.customer || activeQuoteCustomer || {};
+  const customer = options.customerOverride || selectedItems[0]?.customer || detailQuote?.customer || activeQuoteCustomer || {};
+  const redSheetCustomerKey = options.customerKeyOverride || detailPage.dataset.customerKey || customerKey(customer);
   redSheetReturnQuoteId = detailQuoteId || selectedItems[0]?.id || null;
+  redSheetReturnCustomerKey = redSheetCustomerKey;
+  document.querySelectorAll(".red-positionable-field").forEach((element) => element.style.removeProperty("padding-left"));
+  redSheetFieldIds.forEach((id) => setRedSheetText(id));
   setRedSheetText("redCustomerName", customer.customerName);
   setRedSheetText("redCustomerAddress", customer.customerAddress);
   setRedSheetText("redCustomerCity", customer.customerCity);
   setRedSheetText("redCustomerPhone", customer.customerPhone);
   setRedSheetText("redCustomerEmail", customer.customerEmail);
   setRedSheetText("redConsultant", currentUserDisplayName());
-  setRedSheetText(
-    "redDate",
-    new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
-  );
-  document.querySelectorAll(".red-positionable-field").forEach((element) => {
-    element.style.removeProperty("padding-left");
-  });
-  [
-    "redLeadTime",
-    "redPostalCode",
-    "redWorkPhone",
-    "redCellPhone",
-    "redOther",
-    "redJambTrim",
-    "redJambTrimAmount",
-    "redTrimType",
-    "redTrimTypeAmount",
-    "redAlarms",
-    "redAlarmsAmount",
-    "redBlinds",
-    "redBlindsAmount",
-    "redNotesLine1",
-    "redNotesLine2",
-    "redNotesLine3",
-    "redWarrantyDoors",
-    "redWarrantyGlass",
-    "redWarrantyOther",
-    "redDeposit",
-  ].forEach((id) => setRedSheetText(id));
-
-  const lineSpacing = selectedItems.length <= 4 ? 4 : Math.max(1, Math.floor(15 / Math.max(1, selectedItems.length - 1)));
-  const itemByLine = new Map(selectedItems.map((item, index) => [1 + index * lineSpacing, item]));
-  document.getElementById("redSheetLineItems").innerHTML = Array.from({ length: 17 }, (_, index) => {
-    const item = itemByLine.get(index);
-    const description = item ? `Supply and install door as per quote ${item.quoteNumber}` : "";
-    const amount = item ? currency.format(Number(item.total) || 0) : "";
-    return `<div class="red-line-item">
-      <div class="red-line-description${item ? " red-auto-description" : ""}" contenteditable="true" spellcheck="false">${escapeHtml(description)}</div>
-      <div class="red-line-amount red-calculation-amount" contenteditable="true" inputmode="decimal" spellcheck="false">${escapeHtml(amount)}</div>
-    </div>`;
-  }).join("");
+  setRedSheetText("redDate", new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }));
+  renderRedSheetLineItems(generatedRedSheetLineItems(selectedItems));
   updateRedSheetTotals();
   buildRedSheetQuotePages(selectedItems);
+
+  const now = new Date().toISOString();
+  const redSheetNumber = generateRedSheetNumber();
+  const state = captureRedSheetDocument();
+  const redSheet = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    redSheetNumber,
+    customerKey: redSheetCustomerKey,
+    customer,
+    createdAt: now,
+    updatedAt: now,
+    createdBy: currentUserDisplayName(),
+    createdByUsername: currentUsername,
+    returnQuoteId: redSheetReturnQuoteId,
+    returnCustomerKey: redSheetReturnCustomerKey,
+    selectedQuoteIds: selectedIds,
+    fields: state.fields,
+    lineItems: state.lineItems,
+  };
+  activeRedSheetId = redSheet.id;
+  writeSavedRedSheets([redSheet, ...readSavedRedSheets()]);
+  document.getElementById("activeRedSheetNumber").textContent = redSheetNumber;
+  setRedSheetSaveStatus("Saving...");
   setActiveView("redSheet");
+  await syncRedSheetToSharedStorage(redSheet);
+  setRedSheetSaveStatus("Saved");
 }
 
-function returnFromRedSheet() {
+function openSavedRedSheet(redSheetId) {
+  const redSheet = readSavedRedSheets().find((item) => item.id === redSheetId);
+  if (redSheet) showRedSheetRecord(redSheet);
+}
+
+async function copySavedRedSheet(redSheetId) {
+  const source = readSavedRedSheets().find((item) => item.id === redSheetId);
+  if (!source) return;
+  const now = new Date().toISOString();
+  const copy = {
+    ...structuredClone(source),
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    redSheetNumber: generateRedSheetNumber(),
+    createdAt: now,
+    updatedAt: now,
+    createdBy: currentUserDisplayName(),
+    createdByUsername: currentUsername,
+  };
+  writeSavedRedSheets([copy, ...readSavedRedSheets()]);
+  await syncRedSheetToSharedStorage(copy);
+  showRedSheetRecord(copy);
+}
+
+async function deleteSavedRedSheet(redSheetId) {
+  const redSheet = readSavedRedSheets().find((item) => item.id === redSheetId);
+  if (!redSheet || !window.confirm(`Delete ${redSheet.redSheetNumber}?`)) return;
+  writeSavedRedSheets(readSavedRedSheets().filter((item) => item.id !== redSheetId));
+  await deleteRedSheetFromSharedStorage(redSheetId);
+  renderSavedRedSheets(document.getElementById("quoteDetailPage").dataset.customerKey);
+}
+
+function refreshRedSheetDoorPricing() {
+  const redSheet = readSavedRedSheets().find((item) => item.id === activeRedSheetId);
+  if (!redSheet?.selectedQuoteIds?.length) {
+    alert("This Red Sheet does not have any door quotes attached.");
+    return;
+  }
+  const quotes = readSavedQuotes();
+  document.querySelectorAll("#redSheetLineItems .red-line-item[data-quote-id]").forEach((row) => {
+    const quote = quotes.find((item) => item.id === row.dataset.quoteId);
+    if (!quote) return;
+    row.querySelector(".red-line-description").textContent = `Supply and install door as per quote ${quote.quoteNumber}`;
+    row.querySelector(".red-line-amount").textContent = currency.format(Number(quote.total) || 0);
+  });
+  const selectedItems = redSheet.selectedQuoteIds.map((id) => quotes.find((quote) => quote.id === id)).filter(Boolean);
+  buildRedSheetQuotePages(selectedItems);
+  updateRedSheetTotals();
+  scheduleRedSheetSave(0);
+}
+
+async function returnFromRedSheet() {
+  window.clearTimeout(redSheetSaveTimer);
+  if (activeRedSheetId) await saveActiveRedSheet();
   const quote = readSavedQuotes().find((item) => item.id === redSheetReturnQuoteId);
-  if (quote) renderQuoteDetail(quote);
-  setActiveView(quote ? "quoteDetail" : "quotes");
+  activeRedSheetId = null;
+  if (quote) {
+    renderQuoteDetail(quote);
+    setActiveView("quoteDetail");
+    return;
+  }
+  if (redSheetReturnCustomerKey) {
+    openCustomerDetailByKey(redSheetReturnCustomerKey);
+    return;
+  }
+  setActiveView("quotes");
 }
 
 async function saveCustomerInformation(saveVersion) {
@@ -1691,16 +2022,46 @@ async function saveCustomerInformation(saveVersion) {
     return updatedQuote;
   });
 
-  if (!updatedItems.length) return;
-  writeSavedQuotes(updatedQuotes);
+  if (updatedItems.length) writeSavedQuotes(updatedQuotes);
+  const customerFieldMap = {
+    redCustomerName: customer.customerName,
+    redCustomerPhone: customer.customerPhone,
+    redCustomerAddress: customer.customerAddress,
+    redCustomerEmail: customer.customerEmail,
+    redCustomerCity: customer.customerCity,
+  };
+  const updatedRedSheets = [];
+  const nextRedSheets = readSavedRedSheets().map((redSheet) => {
+    if (redSheet.customerKey !== previousCustomerKey) return redSheet;
+    const fields = { ...(redSheet.fields || {}) };
+    Object.entries(customerFieldMap).forEach(([id, text]) => {
+      fields[id] = { ...(fields[id] || {}), text: text || "" };
+    });
+    const updatedRedSheet = {
+      ...redSheet,
+      customer,
+      customerKey: nextCustomerKey,
+      returnCustomerKey: nextCustomerKey,
+      fields,
+      updatedAt: new Date().toISOString(),
+    };
+    updatedRedSheets.push(updatedRedSheet);
+    return updatedRedSheet;
+  });
+  if (updatedRedSheets.length) writeSavedRedSheets(nextRedSheets);
+  if (!updatedItems.length && !updatedRedSheets.length) return;
   activeQuoteCustomer = customer;
   const currentQuote = updatedItems.find((quote) => quote.id === detailPage.dataset.quoteId) || updatedItems[0];
-  renderQuoteDetail(currentQuote);
+  if (currentQuote) renderQuoteDetail(currentQuote);
+  else openCustomerDetailByKey(nextCustomerKey);
   renderSavedQuotes();
   const status = document.getElementById("detailCustomerSaveStatus");
   status.textContent = "Saving...";
   status.hidden = false;
-  await Promise.all(updatedItems.map((quote) => syncQuoteToSharedStorage(quote)));
+  await Promise.all([
+    ...updatedItems.map((quote) => syncQuoteToSharedStorage(quote)),
+    ...updatedRedSheets.map((redSheet) => syncRedSheetToSharedStorage(redSheet)),
+  ]);
   if (saveVersion !== detailCustomerSaveVersion) return;
   status.textContent = "Customer information saved.";
 }
@@ -1757,6 +2118,27 @@ function openQuoteDetail(quoteId) {
   const quote = readSavedQuotes().find((item) => item.id === quoteId);
   if (!quote) return;
   renderQuoteDetail(quote);
+  setActiveView("quoteDetail");
+}
+
+function openCustomerDetailByKey(customerKeyValue) {
+  const quote = readSavedQuotes().find(
+    (item) => (item.customerKey || customerKey(item.customer) || item.id) === customerKeyValue,
+  );
+  if (quote) {
+    openQuoteDetail(quote.id);
+    return;
+  }
+  const redSheet = readSavedRedSheets().find((item) => item.customerKey === customerKeyValue);
+  if (!redSheet) return;
+  renderQuoteDetail({
+    id: "",
+    customer: redSheet.customer || {},
+    customerKey: customerKeyValue,
+    title: redSheet.customer?.customerName || "Customer",
+    date: redSheet.createdAt,
+    createdBy: redSheet.createdBy,
+  });
   setActiveView("quoteDetail");
 }
 
@@ -2468,7 +2850,7 @@ async function setAuthenticated(isAuthenticated) {
       currentUsername = "chris";
       sessionStorage.setItem("westBuiltDoorBuilderUser", currentUsername);
     }
-    await loadSavedQuotes();
+    await Promise.all([loadSavedQuotes(), loadSavedRedSheets()]);
     updateAll();
     updateSystemScroll();
     updatePanelScroll();
@@ -2523,9 +2905,25 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   applyNewItemDefaults();
   setActiveView("builder");
 });
+document.getElementById("createCustomerRedSheetBtn").addEventListener("click", () => {
+  const customer = customerDetails();
+  if (!customer.customerName) {
+    alert("Enter the customer name before creating a Red Sheet.");
+    document.getElementById("customerName").focus();
+    return;
+  }
+  activeQuoteCustomer = customer;
+  createRedSheet({
+    customerOverride: customer,
+    customerKeyOverride: customerKey(customer),
+    returnQuoteIdOverride: null,
+    selectedIdsOverride: [],
+  });
+});
 document.getElementById("detailAddItemBtn").addEventListener("click", () => addItemForCustomer(activeQuoteCustomer));
 document.getElementById("createRedSheetBtn").addEventListener("click", createRedSheet);
 document.getElementById("backFromRedSheetBtn").addEventListener("click", returnFromRedSheet);
+document.getElementById("refreshRedSheetPricingBtn").addEventListener("click", refreshRedSheetDoorPricing);
 async function waitForPrintImages(root) {
   const images = [...root.querySelectorAll("img")];
   await Promise.all(
@@ -2578,6 +2976,8 @@ document.getElementById("printRedSheetBtn").addEventListener("click", async () =
   button.disabled = true;
   button.textContent = "Preparing...";
   try {
+    window.clearTimeout(redSheetSaveTimer);
+    await saveActiveRedSheet();
     const pdfBlob = await createRedSheetPdf();
     const pdfUrl = URL.createObjectURL(pdfBlob);
     previewWindow.location.replace(pdfUrl);
@@ -2594,6 +2994,7 @@ document.getElementById("printRedSheetBtn").addEventListener("click", async () =
 });
 document.getElementById("redSheet").addEventListener("input", (event) => {
   if (event.target.matches(".red-calculation-amount, #redDeposit")) updateRedSheetTotals();
+  scheduleRedSheetSave();
 });
 document.getElementById("redSheet").addEventListener(
   "blur",
@@ -2601,6 +3002,7 @@ document.getElementById("redSheet").addEventListener(
     if (!event.target.matches(".red-calculation-amount, #redDeposit")) return;
     formatRedSheetAmount(event.target);
     updateRedSheetTotals();
+    scheduleRedSheetSave(0);
   },
   true,
 );
@@ -2615,6 +3017,7 @@ document.getElementById("redSheet").addEventListener("pointerdown", (event) => {
   const bounds = line.getBoundingClientRect();
   const clickPosition = Math.min(Math.max(event.clientX - bounds.left, 4), Math.max(4, bounds.width - 12));
   line.style.paddingLeft = `${clickPosition}px`;
+  scheduleRedSheetSave();
 });
 Object.values(detailCustomerFields).forEach((id) => {
   const input = document.getElementById(id);
@@ -2626,7 +3029,8 @@ document.getElementById("saveQuoteBtn").addEventListener("click", saveCurrentQuo
 document.getElementById("quotesList").addEventListener("click", (event) => {
   const button = event.target.closest(".quote-open, .quote-number-link");
   if (!button) return;
-  openQuoteDetail(button.dataset.quoteId);
+  if (button.dataset.quoteId) openQuoteDetail(button.dataset.quoteId);
+  else openCustomerDetailByKey(button.dataset.customerKey);
 });
 document.getElementById("quoteItemsList").addEventListener("click", (event) => {
   const openButton = event.target.closest(".item-open");
@@ -2644,6 +3048,20 @@ document.getElementById("quoteItemsList").addEventListener("click", (event) => {
 
   const deleteButton = event.target.closest(".item-delete");
   if (deleteButton) deleteQuoteItem(deleteButton.dataset.quoteId);
+});
+document.getElementById("savedRedSheetsList").addEventListener("click", (event) => {
+  const openButton = event.target.closest(".saved-red-sheet-open");
+  if (openButton) {
+    openSavedRedSheet(openButton.dataset.redSheetId);
+    return;
+  }
+  const copyButton = event.target.closest(".saved-red-sheet-copy");
+  if (copyButton) {
+    copySavedRedSheet(copyButton.dataset.redSheetId);
+    return;
+  }
+  const deleteButton = event.target.closest(".saved-red-sheet-delete");
+  if (deleteButton) deleteSavedRedSheet(deleteButton.dataset.redSheetId);
 });
 document.getElementById("notes").addEventListener("input", updateQuoteSheet);
 document.getElementById("location").addEventListener("input", updateQuoteSheet);

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>West Built Door Builder</title>
-    <link rel="stylesheet" href="styles.css?v=unique-custom-color-v1" />
+    <link rel="stylesheet" href="styles.css?v=red-sheet-v7" />
   </head>
   <body>
     <section class="login-view" id="loginView" aria-label="Login">
@@ -101,10 +101,84 @@
               <h1 id="detailCustomerName">Customer Quote</h1>
               <p id="detailCustomerInfo"></p>
             </div>
-            <button type="button" id="detailAddItemBtn">Add Item</button>
+            <div class="quote-detail-actions">
+              <button type="button" id="createRedSheetBtn">Create Red Sheet</button>
+              <button type="button" id="detailAddItemBtn">Add Item</button>
+            </div>
           </div>
           <div class="quote-items-list" id="quoteItemsList"></div>
+          <section class="detail-customer-editor" aria-labelledby="detailCustomerEditorHeading">
+            <div class="detail-customer-editor-header">
+              <div>
+                <h2 id="detailCustomerEditorHeading">Customer Information</h2>
+                <p>Changes save automatically for every item in this quote.</p>
+              </div>
+            </div>
+            <div class="detail-customer-form">
+              <label>
+                Customer Name
+                <input id="detailCustomerNameInput" type="text" autocomplete="name" />
+              </label>
+              <label>
+                Phone Number
+                <input id="detailCustomerPhoneInput" type="tel" autocomplete="tel" />
+              </label>
+              <label>
+                Address
+                <input id="detailCustomerAddressInput" type="text" autocomplete="street-address" />
+              </label>
+              <label>
+                Email
+                <input id="detailCustomerEmailInput" type="email" autocomplete="email" />
+              </label>
+              <label>
+                City
+                <input id="detailCustomerCityInput" type="text" autocomplete="address-level2" />
+              </label>
+            </div>
+            <p class="detail-customer-save-status" id="detailCustomerSaveStatus" role="status" hidden></p>
+          </section>
         </div>
+      </section>
+
+      <section class="red-sheet-page" id="redSheetPage" hidden>
+        <div class="red-sheet-actions">
+          <button type="button" id="backFromRedSheetBtn">Back to Quote</button>
+          <button type="button" id="printRedSheetBtn">Print Red Sheet</button>
+        </div>
+        <div class="red-sheet" id="redSheet">
+          <img class="red-sheet-template" src="assets/red-quote-sheet-template.png" alt="" />
+          <div class="red-editable red-page-current" contenteditable="true" id="redPageCurrent">1</div>
+          <div class="red-editable red-page-total" contenteditable="true" id="redPageTotal">1</div>
+          <div class="red-editable red-field red-name" contenteditable="true" id="redCustomerName"></div>
+          <div class="red-editable red-field red-date" contenteditable="true" id="redDate"></div>
+          <div class="red-editable red-field red-address" contenteditable="true" id="redCustomerAddress"></div>
+          <div class="red-editable red-field red-lead-time" contenteditable="true" id="redLeadTime"></div>
+          <div class="red-editable red-field red-city" contenteditable="true" id="redCustomerCity"></div>
+          <div class="red-editable red-field red-postal" contenteditable="true" id="redPostalCode"></div>
+          <div class="red-editable red-field red-consultant" contenteditable="true" id="redConsultant"></div>
+          <div class="red-editable red-field red-home-phone" contenteditable="true" id="redCustomerPhone"></div>
+          <div class="red-editable red-field red-work-phone" contenteditable="true" id="redWorkPhone"></div>
+          <div class="red-editable red-field red-cell-phone" contenteditable="true" id="redCellPhone"></div>
+          <div class="red-editable red-field red-other" contenteditable="true" id="redOther"></div>
+          <div class="red-editable red-field red-email" contenteditable="true" id="redCustomerEmail"></div>
+          <div class="red-sheet-line-items" id="redSheetLineItems"></div>
+          <div class="red-editable red-extra red-jamb-trim" contenteditable="true" id="redJambTrim"></div>
+          <div class="red-editable red-extra-amount red-jamb-trim-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redJambTrimAmount"></div>
+          <div class="red-editable red-extra red-trim-type" contenteditable="true" id="redTrimType"></div>
+          <div class="red-editable red-extra-amount red-trim-type-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redTrimTypeAmount"></div>
+          <div class="red-editable red-extra red-alarms" contenteditable="true" id="redAlarms"></div>
+          <div class="red-editable red-extra-amount red-alarms-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redAlarmsAmount"></div>
+          <div class="red-editable red-extra red-blinds" contenteditable="true" id="redBlinds"></div>
+          <div class="red-editable red-extra-amount red-blinds-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redBlindsAmount"></div>
+          <div class="red-editable red-extra red-notes" contenteditable="true" id="redNotes"></div>
+          <div class="red-editable red-total-value red-subtotal" id="redSubtotal"></div>
+          <div class="red-editable red-total-value red-hst" id="redHst"></div>
+          <div class="red-editable red-total-value red-total" id="redTotal"></div>
+          <div class="red-editable red-total-value red-deposit red-deposit-input" contenteditable="true" inputmode="decimal" id="redDeposit"></div>
+          <div class="red-editable red-total-value red-balance" id="redBalance"></div>
+        </div>
+        <div class="red-sheet-quote-pages" id="redSheetQuotePages"></div>
       </section>
 
       <section class="canvas" id="builderView" hidden>
@@ -808,23 +882,20 @@
             </div>
           </article>
 
-          <article class="accordion" data-section="items">
-            <button class="accordion-head" type="button">
-              <span>Additional Items</span>
-              <span>⌄</span>
-            </button>
-            <div class="accordion-body">
-              <label class="check-row"><input id="install" type="checkbox" /> Installation package</label>
-            </div>
-          </article>
-
           <article class="accordion" data-section="notes">
             <button class="accordion-head" type="button">
-              <span>Notes</span>
+              <span>Location &amp; Notes</span>
               <span>⌄</span>
             </button>
             <div class="accordion-body">
-              <textarea id="notes" rows="4" placeholder="Add quote notes..."></textarea>
+              <label>
+                Location
+                <input id="location" type="text" placeholder="Front door, laundry door, side door..." />
+              </label>
+              <label>
+                Notes
+                <textarea id="notes" rows="4" placeholder="Add quote notes..."></textarea>
+              </label>
             </div>
           </article>
         </div>
@@ -940,9 +1011,10 @@
               <div class="quote-top" id="quoteTopView"></div>
 
               <div class="quote-notes">
-                <h3>Location/Notes:</h3>
-                <p><strong>Tag/Location:</strong></p>
-                <p><strong>Notes:</strong> <span id="quoteNotes"></span></p>
+                <h3>Location</h3>
+                <p id="quoteLocation"></p>
+                <h3>Notes</h3>
+                <p id="quoteNotes"></p>
               </div>
 
               <div class="quote-customer">
@@ -970,6 +1042,6 @@
     </main>
 
     <script src="supabase-config.js?v=unique-custom-color-v1"></script>
-    <script src="app.js?v=unique-custom-color-v1"></script>
+    <script src="app.js?v=combined-drawing-fix-v1"></script>
   </body>
 </html>

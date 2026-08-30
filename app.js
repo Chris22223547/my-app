@@ -79,7 +79,6 @@ const prices = {
   multipointLever: { athena: 0, helios: 0, hercules: 0 },
   transom: 740,
   brickmould: 195,
-  install: 650,
 };
 
 const labels = {
@@ -561,6 +560,13 @@ const currency = new Intl.NumberFormat("en-US", {
 });
 const savedQuotesKey = "westBuiltDoorBuilderQuotes";
 const customerFields = ["customerName", "customerPhone", "customerAddress", "customerEmail", "customerCity"];
+const detailCustomerFields = {
+  customerName: "detailCustomerNameInput",
+  customerPhone: "detailCustomerPhoneInput",
+  customerAddress: "detailCustomerAddressInput",
+  customerEmail: "detailCustomerEmailInput",
+  customerCity: "detailCustomerCityInput",
+};
 const validUsers = {
   chris: { password: "chris123", name: "Chris", email: "chris@westwindows.on.ca" },
   bruce: { password: "bruce123", name: "Bruce", email: "bruce@westwindows.on.ca" },
@@ -573,6 +579,9 @@ let activeQuoteCustomer = null;
 let activeQuoteId = null;
 let currentUsername = sessionStorage.getItem("westBuiltDoorBuilderUser") || "";
 let savedQuotesCache = [];
+let detailCustomerSaveTimer = null;
+let detailCustomerSaveVersion = 0;
+let redSheetReturnQuoteId = null;
 
 function localQuotes() {
   try {
@@ -741,7 +750,6 @@ const controls = [
   "multipointLever",
   "multipointLeverOther",
   "handing",
-  "install",
 ];
 
 function valueOf(id) {
@@ -1210,6 +1218,7 @@ function captureQuoteState(existingQuote = null) {
     customer,
     customerKey: customerKey(customer),
     values,
+    location: document.getElementById("location").value.trim(),
     notes: document.getElementById("notes").value,
     customFrameHeight,
   };
@@ -1243,6 +1252,7 @@ function startNewQuote() {
   activeQuoteId = null;
   setCustomerDetails();
   document.getElementById("notes").value = "";
+  document.getElementById("location").value = "";
   setActiveView("customer");
 }
 
@@ -1299,6 +1309,7 @@ function applyNewItemDefaults() {
   setControlValue("transomHeight", '10"');
   setControlValue("brickmould", true);
 
+  document.getElementById("location").value = "";
   document.getElementById("notes").value = "";
   updateAll();
 }
@@ -1311,7 +1322,7 @@ function addItemForCustomer(customer) {
   setActiveView("builder");
 }
 
-function restoreQuote(quote) {
+function applySavedQuoteState(quote) {
   activeQuoteCustomer = quote.customer || null;
   activeQuoteId = quote.id;
   setCustomerDetails(quote.customer);
@@ -1324,8 +1335,13 @@ function restoreQuote(quote) {
   updateFinishFields();
   Object.entries(savedValues).forEach(([id, value]) => setControlValue(id, value));
   updateFinishFields();
+  document.getElementById("location").value = quote.location || "";
   document.getElementById("notes").value = quote.notes || "";
   updateAll();
+}
+
+function restoreQuote(quote) {
+  applySavedQuoteState(quote);
   setActiveView("builder");
 }
 
@@ -1418,6 +1434,61 @@ function matchingCustomerQuotes(quote) {
   return readSavedQuotes().filter((item) => (item.customerKey || customerKey(item.customer)) === key);
 }
 
+function detailCustomerDetails() {
+  return Object.fromEntries(
+    Object.entries(detailCustomerFields).map(([field, id]) => [field, document.getElementById(id).value.trim()]),
+  );
+}
+
+function setDetailCustomerDetails(customer = {}) {
+  Object.entries(detailCustomerFields).forEach(([field, id]) => {
+    document.getElementById(id).value = customer[field] || "";
+  });
+}
+
+function savedPanelName(panelStyle) {
+  return (
+    [...document.querySelectorAll(".panel-card")].find((card) => card.dataset.panel === panelStyle)?.dataset.name ||
+    "Door Panel"
+  );
+}
+
+function savedLiteSizeLabel(size) {
+  if (!size) return "Size not selected";
+  if (size === "22x14-7-16") return "22 x 14 7/16";
+  return size.replace("x", " x ");
+}
+
+function savedDoorDescription(values = {}) {
+  const panel = savedPanelName(values.panelStyle);
+  if (!values.doorLite || values.doorLite === "none") return `${panel} - No Door Light`;
+
+  const collection = {
+    custom: "Custom Glass",
+    fusion: "Fusion Glass",
+    "trim-lite": "Trimlite Glass",
+  }[values.doorLite] || "Door Glass";
+  const details = [collection, savedLiteSizeLabel(values.liteSize)];
+
+  if (["fusion", "trim-lite"].includes(values.doorLite)) {
+    const style = fusionStylesBySize[values.liteSize]?.find(([value]) => value === values.liteGlassStyle);
+    if (style?.[1]) details.push(style[1]);
+  } else if (values.doorLite === "custom") {
+    details.push(values.liteOption === "frosted" ? "Frosted" : "Low-E/Clear");
+  }
+
+  return `${panel} - ${details.join(" - ")}`;
+}
+
+function savedExteriorFinish(values = {}) {
+  const finishType = values.exteriorFinishType;
+  if (!finishType) return "Not selected";
+  if (finishType === steelFinishValue) return "Polytex White";
+  if (finishType === "unfinished") return "Unfinished";
+  if (values.finish === "custom") return values.finishCustom?.trim() || "Custom";
+  return [...paintColors, ...stainColors].find(([value]) => value === values.finish)?.[1] || "Color not selected";
+}
+
 function renderQuoteDetail(quote) {
   activeQuoteCustomer = quote.customer || null;
   const customer = quote.customer || {};
@@ -1429,14 +1500,30 @@ function renderQuoteDetail(quote) {
 
   document.getElementById("detailCustomerName").textContent = customerName;
   document.getElementById("detailCustomerInfo").textContent = info;
+  setDetailCustomerDetails(customer);
+  const detailPage = document.getElementById("quoteDetailPage");
+  detailPage.dataset.customerKey = quote.customerKey || customerKey(customer) || quote.id;
+  detailPage.dataset.quoteId = quote.id;
+  document.getElementById("detailCustomerSaveStatus").hidden = true;
   document.getElementById("quoteItemsList").innerHTML = items
     .map(
       (item) => {
         const systemSummary = labels.systemType[item.values?.systemType] || "Door";
+        const locationSummary = item.location || "Location not entered";
+        const materialSummary = item.values?.grainFilter === "steel" ? "Steel Door" : "Fiberglass Door";
+        const doorDescription = savedDoorDescription(item.values);
+        const exteriorFinish = savedExteriorFinish(item.values);
         return `<article class="quote-item-row">
+        <label class="red-sheet-select" title="Include ${escapeHtml(item.quoteNumber)} in Red Sheet">
+          <input class="red-sheet-item-select" type="checkbox" value="${escapeHtml(item.id)}" aria-label="Include ${escapeHtml(item.quoteNumber)} in Red Sheet" />
+        </label>
         <div>
           <h2>${escapeHtml(item.quoteNumber)} - ${escapeHtml(item.title || "Door Item")}</h2>
           <p>${escapeHtml(systemSummary)}</p>
+          <p>${escapeHtml(locationSummary)}</p>
+          <p>${escapeHtml(materialSummary)}</p>
+          <p>${escapeHtml(doorDescription)}</p>
+          <p>Exterior Panel - ${escapeHtml(exteriorFinish)}</p>
           <p>${new Date(item.date).toLocaleDateString("en-CA")} - ${currency.format(item.total || 0)}</p>
         </div>
         <div class="quote-item-actions">
@@ -1448,6 +1535,171 @@ function renderQuoteDetail(quote) {
       },
     )
     .join("");
+}
+
+function setRedSheetText(id, value = "") {
+  document.getElementById(id).textContent = value;
+}
+
+function redSheetAmountValue(element) {
+  const value = Number((element?.textContent || "").replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(value) ? value : 0;
+}
+
+function roundCurrency(value) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function updateRedSheetTotals() {
+  const subtotal = roundCurrency(
+    [...document.querySelectorAll(".red-calculation-amount")].reduce(
+      (sum, element) => sum + redSheetAmountValue(element),
+      0,
+    ),
+  );
+  const hst = roundCurrency(subtotal * 0.13);
+  const total = roundCurrency(subtotal + hst);
+  const deposit = roundCurrency(redSheetAmountValue(document.getElementById("redDeposit")));
+  const balance = roundCurrency(total - deposit);
+
+  setRedSheetText("redSubtotal", currency.format(subtotal));
+  setRedSheetText("redHst", currency.format(hst));
+  setRedSheetText("redTotal", currency.format(total));
+  setRedSheetText("redBalance", currency.format(balance));
+}
+
+function formatRedSheetAmount(element) {
+  const rawValue = element.textContent.trim();
+  element.textContent = rawValue ? currency.format(redSheetAmountValue(element)) : "";
+}
+
+function buildRedSheetQuotePages(selectedItems) {
+  const totalPages = selectedItems.length + 1;
+  const quotePages = document.getElementById("redSheetQuotePages");
+  const savedActiveQuoteId = activeQuoteId;
+  const savedActiveCustomer = activeQuoteCustomer;
+  const savedQuote = readSavedQuotes().find((quote) => quote.id === savedActiveQuoteId);
+
+  setRedSheetText("redPageCurrent", "1");
+  setRedSheetText("redPageTotal", String(totalPages));
+  quotePages.replaceChildren();
+
+  selectedItems.forEach((item, index) => {
+    applySavedQuoteState(item);
+    const quotePage = cleanCloneIds(document.querySelector("#quoteView > .quote-sheet").cloneNode(true));
+    makeCloneImagesPrintSafe(quotePage);
+    quotePage.classList.add("red-associated-quote");
+    const pageNumber = quotePage.querySelector(".quote-page");
+    if (pageNumber) pageNumber.textContent = `Page ${index + 2} of ${totalPages}`;
+    quotePages.appendChild(quotePage);
+  });
+
+  if (savedQuote) {
+    applySavedQuoteState(savedQuote);
+  } else {
+    activeQuoteId = savedActiveQuoteId;
+    activeQuoteCustomer = savedActiveCustomer;
+  }
+}
+
+function createRedSheet() {
+  const selectedIds = [...document.querySelectorAll(".red-sheet-item-select:checked")].map((input) => input.value);
+  const quotes = readSavedQuotes();
+  const selectedItems = selectedIds.map((id) => quotes.find((quote) => quote.id === id)).filter(Boolean);
+  const detailQuoteId = document.getElementById("quoteDetailPage").dataset.quoteId;
+  const detailQuote = quotes.find((quote) => quote.id === detailQuoteId);
+  const customer = selectedItems[0]?.customer || detailQuote?.customer || activeQuoteCustomer || {};
+  redSheetReturnQuoteId = detailQuoteId || selectedItems[0]?.id || null;
+  setRedSheetText("redCustomerName", customer.customerName);
+  setRedSheetText("redCustomerAddress", customer.customerAddress);
+  setRedSheetText("redCustomerCity", customer.customerCity);
+  setRedSheetText("redCustomerPhone", customer.customerPhone);
+  setRedSheetText("redCustomerEmail", customer.customerEmail);
+  setRedSheetText("redConsultant", currentUserDisplayName());
+  setRedSheetText("redDate", new Date().toLocaleDateString("en-CA"));
+  [
+    "redLeadTime",
+    "redPostalCode",
+    "redWorkPhone",
+    "redCellPhone",
+    "redOther",
+    "redJambTrim",
+    "redJambTrimAmount",
+    "redTrimType",
+    "redTrimTypeAmount",
+    "redAlarms",
+    "redAlarmsAmount",
+    "redBlinds",
+    "redBlindsAmount",
+    "redNotes",
+    "redDeposit",
+  ].forEach((id) => setRedSheetText(id));
+
+  const lineSpacing = selectedItems.length <= 4 ? 4 : Math.max(1, Math.floor(15 / Math.max(1, selectedItems.length - 1)));
+  const itemByLine = new Map(selectedItems.map((item, index) => [1 + index * lineSpacing, item]));
+  document.getElementById("redSheetLineItems").innerHTML = Array.from({ length: 17 }, (_, index) => {
+    const item = itemByLine.get(index);
+    const description = item ? `Supply and install door as per quote ${item.quoteNumber}` : "";
+    const amount = item ? currency.format(Number(item.total) || 0) : "";
+    return `<div class="red-line-item">
+      <div class="red-line-description${item ? " red-auto-description" : ""}" contenteditable="true" spellcheck="false">${escapeHtml(description)}</div>
+      <div class="red-line-amount red-calculation-amount" contenteditable="true" inputmode="decimal" spellcheck="false">${escapeHtml(amount)}</div>
+    </div>`;
+  }).join("");
+  updateRedSheetTotals();
+  buildRedSheetQuotePages(selectedItems);
+  setActiveView("redSheet");
+}
+
+function returnFromRedSheet() {
+  const quote = readSavedQuotes().find((item) => item.id === redSheetReturnQuoteId);
+  if (quote) renderQuoteDetail(quote);
+  setActiveView(quote ? "quoteDetail" : "quotes");
+}
+
+async function saveCustomerInformation(saveVersion) {
+  const detailPage = document.getElementById("quoteDetailPage");
+  const previousCustomerKey = detailPage.dataset.customerKey;
+  const customer = detailCustomerDetails();
+  const nextCustomerKey = customerKey(customer);
+  const updatedItems = [];
+  const updatedQuotes = readSavedQuotes().map((quote) => {
+    const quoteGroupKey = quote.customerKey || customerKey(quote.customer) || quote.id;
+    if (quoteGroupKey !== previousCustomerKey) return quote;
+
+    const updatedQuote = {
+      ...quote,
+      customer,
+      customerKey: nextCustomerKey,
+      title: customer.customerName || quote.title,
+      updatedAt: new Date().toISOString(),
+    };
+    updatedItems.push(updatedQuote);
+    return updatedQuote;
+  });
+
+  if (!updatedItems.length) return;
+  writeSavedQuotes(updatedQuotes);
+  activeQuoteCustomer = customer;
+  const currentQuote = updatedItems.find((quote) => quote.id === detailPage.dataset.quoteId) || updatedItems[0];
+  renderQuoteDetail(currentQuote);
+  renderSavedQuotes();
+  const status = document.getElementById("detailCustomerSaveStatus");
+  status.textContent = "Saving...";
+  status.hidden = false;
+  await Promise.all(updatedItems.map((quote) => syncQuoteToSharedStorage(quote)));
+  if (saveVersion !== detailCustomerSaveVersion) return;
+  status.textContent = "Customer information saved.";
+}
+
+function scheduleCustomerInformationSave(delay = 700) {
+  window.clearTimeout(detailCustomerSaveTimer);
+  detailCustomerSaveVersion += 1;
+  const saveVersion = detailCustomerSaveVersion;
+  const status = document.getElementById("detailCustomerSaveStatus");
+  status.textContent = "Saving...";
+  status.hidden = false;
+  detailCustomerSaveTimer = window.setTimeout(() => saveCustomerInformation(saveVersion), delay);
 }
 
 async function copyQuoteItem(quoteId) {
@@ -1560,6 +1812,7 @@ function updateQuoteSheet() {
   document.getElementById("quoteSubtotal").textContent = pricingReady ? currency.format(totals.total) : "Not calculated";
   document.getElementById("quoteTax").textContent = pricingReady ? currency.format(tax) : "Not calculated";
   document.getElementById("quoteTotal").textContent = pricingReady ? currency.format(totals.total + tax) : "Not calculated";
+  document.getElementById("quoteLocation").textContent = document.getElementById("location").value.trim();
   document.getElementById("quoteNotes").textContent = document.getElementById("notes").value;
   document.getElementById("quoteUserEmail").textContent = currentUserEmail();
   document.getElementById("quoteCustomerName").textContent = customer.customerName;
@@ -1568,8 +1821,8 @@ function updateQuoteSheet() {
   document.getElementById("quoteCustomerAddress").textContent = customer.customerAddress;
   document.getElementById("quoteCustomerCity").textContent = customer.customerCity;
 
-  const frontView = cleanCloneIds(document.querySelector(".front-view").cloneNode(true));
-  const topView = cleanCloneIds(document.querySelector(".top-view").cloneNode(true));
+  const frontView = cleanCloneIds(document.querySelector("#builderView .front-view").cloneNode(true));
+  const topView = cleanCloneIds(document.querySelector("#builderView .top-view").cloneNode(true));
   document.getElementById("quoteFrontView").replaceChildren(frontView);
   document.getElementById("quoteTopView").replaceChildren(topView);
 }
@@ -2175,19 +2428,21 @@ function setActiveView(view) {
   const quotesActive = view === "quotes";
   const customerActive = view === "customer";
   const quoteDetailActive = view === "quoteDetail";
+  const redSheetActive = view === "redSheet";
   const quoteWorkflowActive = ["builder", "quote"].includes(view);
   document.getElementById("quotesPage").hidden = !quotesActive;
   document.getElementById("customerPage").hidden = !customerActive;
   document.getElementById("quoteDetailPage").hidden = !quoteDetailActive;
-  document.getElementById("builderView").hidden = quoteActive || quotesActive || customerActive || quoteDetailActive;
+  document.getElementById("redSheetPage").hidden = !redSheetActive;
+  document.getElementById("builderView").hidden = quoteActive || quotesActive || customerActive || quoteDetailActive || redSheetActive;
   document.getElementById("quoteView").hidden = !quoteActive;
-  document.querySelector(".disclaimer").hidden = quoteActive || quotesActive || customerActive || quoteDetailActive;
+  document.querySelector(".disclaimer").hidden = quoteActive || quotesActive || customerActive || quoteDetailActive || redSheetActive;
   document.querySelector(".toolbar").hidden = !quoteWorkflowActive;
   document.querySelector(".toolbar-left").hidden = !quoteWorkflowActive;
   document.querySelector(".view-tabs").hidden = !quoteWorkflowActive;
   document.getElementById("builderTab").classList.toggle("active", view === "builder");
   document.getElementById("quoteTab").classList.toggle("active", quoteActive);
-  document.getElementById("quotesLink").classList.toggle("active", quotesActive || customerActive || quoteDetailActive);
+  document.getElementById("quotesLink").classList.toggle("active", quotesActive || customerActive || quoteDetailActive || redSheetActive);
   if (quotesActive) renderSavedQuotes();
   if (quoteActive) updateQuoteSheet();
 }
@@ -2209,6 +2464,7 @@ async function setAuthenticated(isAuthenticated) {
     document.getElementById("quotesPage").hidden = true;
     document.getElementById("customerPage").hidden = true;
     document.getElementById("quoteDetailPage").hidden = true;
+    document.getElementById("redSheetPage").hidden = true;
     document.getElementById("builderView").hidden = true;
     document.getElementById("quoteView").hidden = true;
     document.querySelector(".toolbar").hidden = true;
@@ -2255,6 +2511,55 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
   setActiveView("builder");
 });
 document.getElementById("detailAddItemBtn").addEventListener("click", () => addItemForCustomer(activeQuoteCustomer));
+document.getElementById("createRedSheetBtn").addEventListener("click", createRedSheet);
+document.getElementById("backFromRedSheetBtn").addEventListener("click", returnFromRedSheet);
+document.getElementById("printRedSheetBtn").addEventListener("click", async () => {
+  const images = [...document.querySelectorAll("#redSheetPage img")];
+  await Promise.all(
+    images.map(async (image) => {
+      if (!image.complete) {
+        await new Promise((resolve) => {
+          image.addEventListener("load", resolve, { once: true });
+          image.addEventListener("error", resolve, { once: true });
+        });
+      }
+      if (image.decode) await image.decode().catch(() => {});
+    }),
+  );
+  previousPrintTitle = document.title;
+  document.title = `Red Sheet - ${document.getElementById("redCustomerName").textContent.trim() || "Customer"}`;
+  document.body.classList.add("printing-red-sheet");
+  window.print();
+});
+document.getElementById("redSheet").addEventListener("input", (event) => {
+  if (event.target.matches(".red-calculation-amount, #redDeposit")) updateRedSheetTotals();
+});
+document.getElementById("redSheet").addEventListener(
+  "blur",
+  (event) => {
+    if (!event.target.matches(".red-calculation-amount, #redDeposit")) return;
+    formatRedSheetAmount(event.target);
+    updateRedSheetTotals();
+  },
+  true,
+);
+document.getElementById("redSheet").addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || !event.target.matches(".red-calculation-amount, #redDeposit")) return;
+  event.preventDefault();
+  event.target.blur();
+});
+document.getElementById("redSheet").addEventListener("pointerdown", (event) => {
+  const line = event.target.closest(".red-line-description");
+  if (!line || line.textContent.trim()) return;
+  const bounds = line.getBoundingClientRect();
+  const clickPosition = Math.min(Math.max(event.clientX - bounds.left, 7), bounds.width - 20);
+  line.style.paddingLeft = `${clickPosition}px`;
+});
+Object.values(detailCustomerFields).forEach((id) => {
+  const input = document.getElementById(id);
+  input.addEventListener("input", () => scheduleCustomerInformationSave());
+  input.addEventListener("change", () => scheduleCustomerInformationSave(0));
+});
 document.getElementById("backToQuotesBtn").addEventListener("click", () => setActiveView("quotes"));
 document.getElementById("saveQuoteBtn").addEventListener("click", saveCurrentQuote);
 document.getElementById("quotesList").addEventListener("click", (event) => {
@@ -2280,6 +2585,7 @@ document.getElementById("quoteItemsList").addEventListener("click", (event) => {
   if (deleteButton) deleteQuoteItem(deleteButton.dataset.quoteId);
 });
 document.getElementById("notes").addEventListener("input", updateQuoteSheet);
+document.getElementById("location").addEventListener("input", updateQuoteSheet);
 customerFields.forEach((id) => document.getElementById(id).addEventListener("input", updateQuoteSheet));
 document.getElementById("printBtn").addEventListener("click", () => {
   setActiveView("quote");
@@ -2371,7 +2677,7 @@ function createPdfFromJpeg(jpegBytes, imageWidth, imageHeight) {
 async function renderQuoteSheetToPdf({ includePricing = true } = {}) {
   setActiveView("quote");
   await new Promise((resolve) => requestAnimationFrame(resolve));
-  const sheet = document.querySelector(".quote-sheet");
+  const sheet = document.querySelector("#quoteView > .quote-sheet");
   const rect = sheet.getBoundingClientRect();
   const clone = sheet.cloneNode(true);
   if (!includePricing) {
@@ -2489,6 +2795,7 @@ document.getElementById("savePdfNoPricingBtn").addEventListener("click", async (
 });
 window.addEventListener("afterprint", () => {
   document.body.classList.remove("print-no-pricing");
+  document.body.classList.remove("printing-red-sheet");
   if (previousPrintTitle) {
     document.title = previousPrintTitle;
     previousPrintTitle = "";

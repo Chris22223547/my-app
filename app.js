@@ -2526,8 +2526,8 @@ document.getElementById("addItemBtn").addEventListener("click", () => {
 document.getElementById("detailAddItemBtn").addEventListener("click", () => addItemForCustomer(activeQuoteCustomer));
 document.getElementById("createRedSheetBtn").addEventListener("click", createRedSheet);
 document.getElementById("backFromRedSheetBtn").addEventListener("click", returnFromRedSheet);
-document.getElementById("printRedSheetBtn").addEventListener("click", async () => {
-  const images = [...document.querySelectorAll("#redSheetPage img")];
+async function waitForPrintImages(root) {
+  const images = [...root.querySelectorAll("img")];
   await Promise.all(
     images.map(async (image) => {
       if (image.getAttribute("src") && (!image.complete || !image.naturalWidth)) {
@@ -2543,11 +2543,54 @@ document.getElementById("printRedSheetBtn").addEventListener("click", async () =
       }
     }),
   );
-  previousPrintTitle = document.title;
-  document.title = `Red Sheet - ${document.getElementById("redCustomerName").textContent.trim() || "Customer"}`;
-  document.body.classList.add("printing-red-sheet");
-  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  window.print();
+}
+
+async function createRedSheetPdf() {
+  const pageElements = [
+    document.getElementById("redSheet"),
+    ...document.querySelectorAll("#redSheetQuotePages > .quote-sheet"),
+  ];
+  const pages = [];
+  for (const pageElement of pageElements) {
+    const renderedPage = await renderElementToJpegDataUrl(pageElement);
+    pages.push({
+      jpegBytes: jpegDataUrlToBytes(renderedPage.dataUrl),
+      imageWidth: renderedPage.width,
+      imageHeight: renderedPage.height,
+    });
+  }
+  return createPdfFromJpegPages(pages);
+}
+
+document.getElementById("printRedSheetBtn").addEventListener("click", async () => {
+  const previewWindow = window.open("", "_blank");
+  if (!previewWindow) {
+    alert("Chrome blocked the print preview. Please allow pop-ups for this site and try again.");
+    return;
+  }
+  previewWindow.document.write(`<!doctype html><title>Preparing Red Sheet PDF</title>
+    <body style="margin:0;display:grid;place-items:center;height:100vh;font:600 18px Arial;color:#17456f">
+      Preparing the Red Sheet PDF...
+    </body>`);
+  previewWindow.document.close();
+
+  const button = document.getElementById("printRedSheetBtn");
+  button.disabled = true;
+  button.textContent = "Preparing...";
+  try {
+    const pdfBlob = await createRedSheetPdf();
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    previewWindow.location.replace(pdfUrl);
+    window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 600000);
+  } catch (error) {
+    previewWindow.close();
+    document.body.dataset.redSheetPrintError = error?.message || "Unknown error";
+    console.error("Red Sheet PDF preparation failed", error);
+    alert(`The Red Sheet PDF could not be prepared: ${error?.message || "Unknown error"}`);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Print Red Sheet";
+  }
 });
 document.getElementById("redSheet").addEventListener("input", (event) => {
   if (event.target.matches(".red-calculation-amount, #redDeposit")) updateRedSheetTotals();
@@ -2628,6 +2671,23 @@ function makeCloneImagesPrintSafe(clone) {
   });
 }
 
+async function renderElementToJpegDataUrl(element) {
+  await waitForPrintImages(element);
+  if (!window.html2canvas) throw new Error("The PDF renderer did not load. Please refresh and try again.");
+  const canvas = await window.html2canvas(element, {
+    backgroundColor: "#ffffff",
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    removeContainer: true,
+  });
+  return {
+    dataUrl: canvas.toDataURL("image/jpeg", 0.9),
+    width: canvas.width,
+    height: canvas.height,
+  };
+}
+
 function jpegDataUrlToBytes(dataUrl) {
   const base64 = dataUrl.split(",")[1];
   const binary = atob(base64);
@@ -2688,6 +2748,59 @@ function createPdfFromJpeg(jpegBytes, imageWidth, imageHeight) {
       .slice(1)
       .map((offset) => `${String(offset).padStart(10, "0")} 00000 n `)
       .join("\n")}\ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefPosition}\n%%EOF`;
+
+  return new Blob([concatBytes([header, ...objects, pdfText(xref)])], { type: "application/pdf" });
+}
+
+function createPdfFromJpegPages(pages) {
+  const pageWidth = 612;
+  const pageHeight = 792;
+  const margin = 24;
+  const pageReferences = pages.map((_, index) => `${3 + index * 3} 0 R`).join(" ");
+  const objects = [
+    pdfText("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"),
+    pdfText(`2 0 obj\n<< /Type /Pages /Kids [${pageReferences}] /Count ${pages.length} >>\nendobj\n`),
+  ];
+
+  pages.forEach((page, index) => {
+    const pageObject = 3 + index * 3;
+    const imageObject = pageObject + 1;
+    const contentObject = pageObject + 2;
+    const scale = Math.min(
+      (pageWidth - margin * 2) / page.imageWidth,
+      (pageHeight - margin * 2) / page.imageHeight,
+    );
+    const drawWidth = page.imageWidth * scale;
+    const drawHeight = page.imageHeight * scale;
+    const drawX = (pageWidth - drawWidth) / 2;
+    const drawY = (pageHeight - drawHeight) / 2;
+    const content = `q\n${drawWidth.toFixed(2)} 0 0 ${drawHeight.toFixed(2)} ${drawX.toFixed(2)} ${drawY.toFixed(2)} cm\n/Im0 Do\nQ\n`;
+
+    objects.push(
+      pdfText(`${pageObject} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /XObject << /Im0 ${imageObject} 0 R >> >> /Contents ${contentObject} 0 R >>\nendobj\n`),
+      concatBytes([
+        pdfText(`${imageObject} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${page.imageWidth} /Height ${page.imageHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.jpegBytes.length} >>\nstream\n`),
+        page.jpegBytes,
+        pdfText("\nendstream\nendobj\n"),
+      ]),
+      pdfText(`${contentObject} 0 obj\n<< /Length ${content.length} >>\nstream\n${content}endstream\nendobj\n`),
+    );
+  });
+
+  const header = pdfText("%PDF-1.4\n");
+  const offsets = [0];
+  let position = header.length;
+  objects.forEach((object) => {
+    offsets.push(position);
+    position += object.length;
+  });
+  const xrefPosition = position;
+  const objectCount = objects.length + 1;
+  const xref =
+    `xref\n0 ${objectCount}\n0000000000 65535 f \n${offsets
+      .slice(1)
+      .map((offset) => `${String(offset).padStart(10, "0")} 00000 n `)
+      .join("\n")}\ntrailer\n<< /Size ${objectCount} /Root 1 0 R >>\nstartxref\n${xrefPosition}\n%%EOF`;
 
   return new Blob([concatBytes([header, ...objects, pdfText(xref)])], { type: "application/pdf" });
 }

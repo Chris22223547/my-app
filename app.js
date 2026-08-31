@@ -3001,7 +3001,7 @@ document.getElementById("printRedSheetBtn").addEventListener("click", async () =
   if (shouldPrintRedSheetDirectly()) {
     window.clearTimeout(redSheetSaveTimer);
     saveActiveRedSheet().catch((error) => console.error("Red Sheet save failed before printing", error));
-    document.body.classList.add("printing-red-sheet");
+    document.body.classList.add("printing-red-sheet", "printing-red-sheet-ios");
     window.print();
     return;
   }
@@ -3395,6 +3395,7 @@ document.getElementById("savePdfNoPricingBtn").addEventListener("click", async (
 window.addEventListener("afterprint", () => {
   document.body.classList.remove("print-no-pricing");
   document.body.classList.remove("printing-red-sheet");
+  document.body.classList.remove("printing-red-sheet-ios");
   if (previousPrintTitle) {
     document.title = previousPrintTitle;
     previousPrintTitle = "";

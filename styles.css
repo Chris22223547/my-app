@@ -2354,6 +2354,16 @@ body.print-no-pricing .quote-total-row {
     box-shadow: none;
   }
 
+  body.printing-red-sheet-ios .red-sheet,
+  body.printing-red-sheet-ios .red-sheet-quote-pages .quote-sheet {
+    zoom: 0.78 !important;
+  }
+
+  body.printing-red-sheet-ios .red-sheet-quote-pages .quote-sheet {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   body:not(.printing-red-sheet) .red-sheet-page {
     display: none !important;
   }

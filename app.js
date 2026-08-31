@@ -1255,9 +1255,37 @@ function customerDetails() {
   return Object.fromEntries(customerFields.map((id) => [id, document.getElementById(id).value.trim()]));
 }
 
+function formatPhoneNumber(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  const hasCountryCode = digits.startsWith("1");
+  const localDigits = (hasCountryCode ? digits.slice(1) : digits).slice(0, 10);
+  const groups = [localDigits.slice(0, 3), localDigits.slice(3, 6), localDigits.slice(6, 10)].filter(Boolean);
+  const formatted = groups.join("-");
+  return hasCountryCode && formatted ? `1-${formatted}` : formatted;
+}
+
+function formatPhoneField(element) {
+  const isInput = element.tagName === "INPUT" || element.tagName === "TEXTAREA";
+  const currentValue = isInput ? element.value : element.textContent;
+  const formatted = formatPhoneNumber(currentValue);
+  if (isInput) {
+    element.value = formatted;
+    element.setSelectionRange(formatted.length, formatted.length);
+    return;
+  }
+  element.textContent = formatted;
+  const selection = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
 function setCustomerDetails(customer = {}) {
   customerFields.forEach((id) => {
-    document.getElementById(id).value = customer[id] || "";
+    const element = document.getElementById(id);
+    element.value = id === "customerPhone" ? formatPhoneNumber(customer[id]) : customer[id] || "";
   });
 }
 
@@ -1539,7 +1567,7 @@ function detailCustomerDetails() {
 
 function setDetailCustomerDetails(customer = {}) {
   Object.entries(detailCustomerFields).forEach(([field, id]) => {
-    document.getElementById(id).value = customer[field] || "";
+    document.getElementById(id).value = field === "customerPhone" ? formatPhoneNumber(customer[field]) : customer[field] || "";
   });
 }
 
@@ -1836,6 +1864,9 @@ function restoreRedSheetFields(fields = {}) {
     if (saved?.paddingLeft) element.style.paddingLeft = saved.paddingLeft;
     else element.style.removeProperty("padding-left");
   });
+  ["redCustomerPhone", "redWorkPhone", "redCellPhone", "redOther"].forEach((id) => {
+    formatPhoneField(document.getElementById(id));
+  });
 }
 
 function setRedSheetSaveStatus(message) {
@@ -1901,6 +1932,7 @@ async function createRedSheet(options = {}) {
   setRedSheetText("redCustomerCity", customer.customerCity);
   setRedSheetText("redCustomerPhone", customer.customerPhone);
   setRedSheetText("redCustomerEmail", customer.customerEmail);
+  formatPhoneField(document.getElementById("redCustomerPhone"));
   setRedSheetText("redConsultant", currentUserDisplayName());
   setRedSheetText("redDate", new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }));
   renderRedSheetLineItems(generatedRedSheetLineItems(selectedItems));
@@ -2960,7 +2992,20 @@ async function createRedSheetPdf() {
   return createPdfFromJpegPages(pages);
 }
 
+function shouldPrintRedSheetDirectly() {
+  return /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
 document.getElementById("printRedSheetBtn").addEventListener("click", async () => {
+  if (shouldPrintRedSheetDirectly()) {
+    window.clearTimeout(redSheetSaveTimer);
+    saveActiveRedSheet().catch((error) => console.error("Red Sheet save failed before printing", error));
+    document.body.classList.add("printing-red-sheet");
+    window.print();
+    return;
+  }
+
   const previewWindow = window.open("", "_blank");
   if (!previewWindow) {
     alert("Chrome blocked the print preview. Please allow pop-ups for this site and try again.");
@@ -2993,6 +3038,9 @@ document.getElementById("printRedSheetBtn").addEventListener("click", async () =
   }
 });
 document.getElementById("redSheet").addEventListener("input", (event) => {
+  if (event.target.matches("#redCustomerPhone, #redWorkPhone, #redCellPhone, #redOther")) {
+    formatPhoneField(event.target);
+  }
   if (event.target.matches(".red-calculation-amount, #redDeposit")) updateRedSheetTotals();
   scheduleRedSheetSave();
 });
@@ -3024,6 +3072,8 @@ Object.values(detailCustomerFields).forEach((id) => {
   input.addEventListener("input", () => scheduleCustomerInformationSave());
   input.addEventListener("change", () => scheduleCustomerInformationSave(0));
 });
+document.getElementById("customerPhone").addEventListener("input", (event) => formatPhoneField(event.target));
+document.getElementById("detailCustomerPhoneInput").addEventListener("input", (event) => formatPhoneField(event.target));
 document.getElementById("backToQuotesBtn").addEventListener("click", () => setActiveView("quotes"));
 document.getElementById("saveQuoteBtn").addEventListener("click", saveCurrentQuote);
 document.getElementById("quotesList").addEventListener("click", (event) => {

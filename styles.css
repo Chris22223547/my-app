@@ -2360,6 +2360,8 @@ body.print-no-pricing .quote-total-row {
   }
 
   body.printing-red-sheet-ios .red-sheet-quote-pages .quote-sheet {
+    break-before: auto;
+    page-break-before: auto;
     break-inside: avoid;
     page-break-inside: avoid;
   }

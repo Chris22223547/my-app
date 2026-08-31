@@ -2999,8 +2999,16 @@ function shouldPrintRedSheetDirectly() {
 
 document.getElementById("printRedSheetBtn").addEventListener("click", async () => {
   if (shouldPrintRedSheetDirectly()) {
+    const redSheetNumber = document.getElementById("activeRedSheetNumber").textContent.trim() || "Red Sheet";
+    const customerName = document.getElementById("redCustomerName").textContent.trim();
+    const defaultPdfName = safeFileName([redSheetNumber, customerName].filter(Boolean).join(" - "));
+    const requestedPdfName = window.prompt("Name this PDF before printing:", defaultPdfName);
+    if (requestedPdfName === null) return;
+
     window.clearTimeout(redSheetSaveTimer);
     saveActiveRedSheet().catch((error) => console.error("Red Sheet save failed before printing", error));
+    previousPrintTitle = document.title;
+    document.title = safeFileName(requestedPdfName).replace(/\.pdf$/i, "") || defaultPdfName;
     document.body.classList.add("printing-red-sheet", "printing-red-sheet-ios");
     window.print();
     return;

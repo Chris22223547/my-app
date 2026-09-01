@@ -343,6 +343,92 @@ button {
   gap: 8px;
 }
 
+.marketsharp-import {
+  margin: 0 0 22px;
+  padding: 18px 0 20px;
+  border-top: 1px solid #d9e0e6;
+  border-bottom: 1px solid #d9e0e6;
+}
+
+.marketsharp-import-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.marketsharp-import-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.marketsharp-import-header button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  color: #4d5d69;
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.marketsharp-import-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1.2fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.marketsharp-import-grid label {
+  color: #344452;
+  font-weight: 700;
+}
+
+.marketsharp-import-grid input,
+.marketsharp-import-grid textarea {
+  margin-top: 7px;
+  border: 1px solid #c7d0d8;
+  background: #f9fbfc;
+}
+
+.marketsharp-import-grid input {
+  min-height: 44px;
+  padding: 8px;
+}
+
+.marketsharp-import-grid textarea {
+  min-height: 150px;
+}
+
+.marketsharp-import-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.marketsharp-import-actions p {
+  flex: 1;
+  margin: 0;
+  color: #a1281c;
+  font-weight: 700;
+}
+
+.marketsharp-import-actions p.success {
+  color: #21733b;
+}
+
+.marketsharp-import-actions button {
+  border: 0;
+  padding: 10px 14px;
+  color: #fff;
+  background: var(--blue);
+  font-weight: 800;
+}
+
 .customer-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -365,6 +451,598 @@ button {
 
 .customer-form label:nth-child(3) {
   grid-column: 1 / -1;
+}
+
+.item-category-page {
+  min-height: calc(100vh - 55px);
+  padding: 32px;
+  background: #f6f8fa;
+}
+
+.item-category-panel {
+  max-width: 880px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d9e0e6;
+}
+
+.item-category-back {
+  border: 1px solid #b9c5cf;
+  padding: 8px 12px;
+  color: var(--blue);
+  background: #fff;
+  font-weight: 800;
+}
+
+.item-category-heading {
+  margin: 22px 0;
+}
+
+.item-category-heading h1 {
+  margin: 0 0 4px;
+  font-size: 30px;
+}
+
+.item-category-heading p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.item-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.item-category-grid button {
+  min-height: 84px;
+  border: 1px solid #c8d2db;
+  padding: 14px;
+  color: #173f62;
+  background: #f9fbfc;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.item-category-grid button:hover,
+.item-category-grid button:focus-visible {
+  border-color: var(--blue);
+  background: #eef4f8;
+}
+
+.patio-door-page {
+  min-height: calc(100vh - 55px);
+  padding: 32px;
+  background: #f6f8fa;
+}
+
+.patio-door-panel {
+  max-width: 1100px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d9e0e6;
+}
+
+.patio-door-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.patio-door-option {
+  position: relative;
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  border: 2px solid transparent;
+  padding: 8px;
+  color: #1f2d3a;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.patio-door-option:hover,
+.patio-door-option:focus-visible {
+  border-color: #8ea9bf;
+}
+
+.patio-door-option[aria-pressed="true"] {
+  border-color: var(--blue);
+  background: #eef4f8;
+}
+
+.patio-door-image {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 150px;
+  overflow: hidden;
+  background: #f2f3f4;
+}
+
+.patio-door-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.patio-door-size-page {
+  min-height: calc(100vh - 55px);
+  padding: 32px;
+  background: #f6f8fa;
+}
+
+.patio-door-size-panel {
+  max-width: 880px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d9e0e6;
+}
+
+.patio-door-size-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.patio-door-size-option {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-width: 0;
+  border: 2px solid transparent;
+  padding: 10px;
+  color: #1f2d3a;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.patio-door-size-option:hover,
+.patio-door-size-option:focus-visible {
+  border-color: #8ea9bf;
+}
+
+.patio-door-size-option[aria-pressed="true"] {
+  border-color: var(--blue);
+  background: #eef4f8;
+}
+
+.patio-door-size-image {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 120px;
+}
+
+.patio-door-size-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.patio-glass-page {
+  min-height: calc(100vh - 55px);
+  padding: 32px;
+  background: #f6f8fa;
+}
+
+.patio-glass-panel {
+  max-width: 880px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d9e0e6;
+}
+
+.patio-glass-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.patio-glass-option {
+  min-height: 150px;
+  border: 2px solid #c8d2db;
+  padding: 22px;
+  color: #173f62;
+  background: #f9fbfc;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.patio-glass-option:hover,
+.patio-glass-option:focus-visible {
+  border-color: #8ea9bf;
+  background: #eef4f8;
+}
+
+.patio-glass-option[aria-pressed="true"] {
+  border-color: var(--blue);
+  background: #e3eef5;
+}
+
+.patio-low-e-page {
+  min-height: calc(100vh - 55px);
+  padding: 32px;
+  background: #f6f8fa;
+}
+
+.patio-low-e-panel {
+  max-width: 880px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d9e0e6;
+}
+
+.patio-low-e-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.patio-low-e-option {
+  min-height: 150px;
+  border: 2px solid #c8d2db;
+  padding: 22px;
+  color: #173f62;
+  background: #f9fbfc;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.patio-low-e-option:hover,
+.patio-low-e-option:focus-visible {
+  border-color: #8ea9bf;
+  background: #eef4f8;
+}
+
+.patio-low-e-option[aria-pressed="true"] {
+  border-color: var(--blue);
+  background: #e3eef5;
+}
+
+.patio-paint-page {
+  min-height: calc(100vh - 55px);
+  padding: 32px;
+  background: #f6f8fa;
+}
+
+.patio-paint-panel {
+  max-width: 980px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d9e0e6;
+}
+
+.patio-paint-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.patio-paint-option {
+  min-height: 150px;
+  border: 2px solid #c8d2db;
+  padding: 22px;
+  color: #173f62;
+  background: #f9fbfc;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.patio-paint-option:hover,
+.patio-paint-option:focus-visible {
+  border-color: #8ea9bf;
+  background: #eef4f8;
+}
+
+.patio-paint-option[aria-pressed="true"] {
+  border-color: var(--blue);
+  background: #e3eef5;
+}
+
+.patio-color-page {
+  min-height: calc(100vh - 55px);
+  padding: 32px;
+  background: #f6f8fa;
+}
+
+.patio-color-panel {
+  max-width: 880px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d9e0e6;
+}
+
+.patio-color-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.patio-color-form label {
+  display: grid;
+  gap: 8px;
+  color: #344452;
+  font-weight: 800;
+}
+
+.patio-color-form select {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #b9c5cf;
+  padding: 0 12px;
+  color: #1f2d3a;
+  background: #fff;
+  font-size: 16px;
+}
+
+.patio-color-warning {
+  margin: 14px 0 0;
+  color: #b3261e;
+  font-weight: 800;
+}
+
+.patio-color-continue {
+  margin-top: 20px;
+  border: 0;
+  padding: 11px 18px;
+  color: #fff;
+  background: var(--blue);
+  font-weight: 800;
+}
+
+.patio-handle-page {
+  min-height: calc(100vh - 55px);
+  padding: 32px;
+  background: #f6f8fa;
+}
+
+.patio-handle-panel {
+  max-width: 980px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d9e0e6;
+}
+
+.patio-handle-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.patio-handle-option {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 190px;
+  border: 2px solid transparent;
+  padding: 12px;
+  color: #1f2d3a;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.patio-handle-option:hover,
+.patio-handle-option:focus-visible {
+  border-color: #8ea9bf;
+  background: #f7fafc;
+}
+
+.patio-handle-option[aria-pressed="true"] {
+  border-color: var(--blue);
+  background: #eef4f8;
+}
+
+.patio-handle-image {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 115px;
+}
+
+.patio-handle-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.patio-review-page {
+  min-height: calc(100vh - 55px);
+  padding: 32px;
+  background: #f6f8fa;
+}
+
+.patio-review-panel {
+  max-width: 760px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #d9e0e6;
+}
+
+.patio-review-form {
+  display: grid;
+  gap: 14px;
+}
+
+.patio-review-form label {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  color: #344452;
+  font-weight: 800;
+}
+
+.patio-review-form select {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #b9c5cf;
+  padding: 0 12px;
+  color: #1f2d3a;
+  background: #fff;
+  font-size: 15px;
+}
+
+.patio-review-included {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #d9e0e6;
+}
+
+.patio-review-included p {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 14px;
+  margin: 0;
+  color: #344452;
+}
+
+.patio-review-included span {
+  color: #21733b;
+  font-weight: 800;
+}
+
+.patio-review-finish {
+  margin-top: 20px;
+  border: 0;
+  padding: 11px 18px;
+  color: #fff;
+  background: var(--blue);
+  font-weight: 800;
+}
+
+.patio-summary-page {
+  min-height: calc(100vh - 55px);
+  padding: 24px 32px 48px;
+  background: #e9edf1;
+  overflow: auto;
+}
+
+.patio-summary-actions {
+  display: flex;
+  justify-content: flex-start;
+  width: min(8.5in, 100%);
+  margin: 0 auto 12px;
+}
+
+.patio-summary-actions button {
+  border: 0;
+  padding: 10px 14px;
+  color: #fff;
+  background: var(--blue);
+  font-weight: 800;
+}
+
+.patio-summary-sheet {
+  width: min(8.5in, 100%);
+  min-height: 9.5in;
+  margin: 0 auto;
+  padding: 34px 38px;
+  color: #111;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(15, 31, 45, 0.18);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.patio-summary-header {
+  display: grid;
+  grid-template-columns: 1fr 190px 220px;
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 26px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #cfd6dc;
+}
+
+.patio-summary-company h2,
+.patio-summary-title h1,
+.patio-summary-body h3 {
+  margin: 0;
+}
+
+.patio-summary-company h2 {
+  font-size: 15px;
+}
+
+.patio-summary-company p,
+.patio-summary-title p,
+.patio-summary-details p {
+  margin: 3px 0;
+  line-height: 1.3;
+}
+
+.patio-summary-title h1 {
+  margin-bottom: 8px;
+  font-size: 21px;
+}
+
+.patio-summary-body {
+  display: grid;
+  grid-template-columns: 245px minmax(0, 1fr);
+  gap: 34px;
+}
+
+.patio-summary-visual h3,
+.patio-summary-details h3 {
+  font-size: 14px;
+}
+
+.patio-summary-visual img {
+  display: block;
+  width: min(160px, 100%);
+  max-height: 320px;
+  margin-top: 12px;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.patio-summary-customer-details {
+  margin-top: 28px;
+}
+
+.patio-summary-customer-details h3 {
+  margin-bottom: 8px;
+}
+
+.patio-summary-customer-details p {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.patio-summary-details h3 {
+  margin-top: 18px;
+}
+
+.patio-summary-details h3:first-child {
+  margin-top: 0;
+}
+
+.patio-summary-details p {
+  font-size: 14px;
 }
 
 .quote-detail-page {
@@ -822,7 +1500,152 @@ button {
   margin: 0 auto;
 }
 
+.red-sheet-quote-page-shell {
+  width: 8.5in;
+  margin: 0 auto;
+}
+
 @media (max-width: 700px) {
+  .item-category-page {
+    padding: 18px;
+  }
+
+  .item-category-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .item-category-grid button {
+    min-height: 60px;
+  }
+
+  .patio-door-page {
+    padding: 18px;
+  }
+
+  .patio-door-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .patio-door-image {
+    height: 120px;
+  }
+
+  .patio-door-size-page {
+    padding: 18px;
+  }
+
+  .patio-door-size-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .patio-door-size-image {
+    height: 95px;
+  }
+
+  .patio-glass-page {
+    padding: 18px;
+  }
+
+  .patio-glass-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .patio-glass-option {
+    min-height: 100px;
+    font-size: 19px;
+  }
+
+  .patio-low-e-page {
+    padding: 18px;
+  }
+
+  .patio-low-e-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .patio-low-e-option {
+    min-height: 90px;
+    font-size: 20px;
+  }
+
+  .patio-paint-page {
+    padding: 18px;
+  }
+
+  .patio-paint-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .patio-paint-option {
+    min-height: 90px;
+    font-size: 18px;
+  }
+
+  .patio-color-page {
+    padding: 18px;
+  }
+
+  .patio-color-form {
+    grid-template-columns: 1fr;
+  }
+
+  .patio-handle-page {
+    padding: 18px;
+  }
+
+  .patio-handle-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .patio-handle-option {
+    min-height: 155px;
+    font-size: 14px;
+  }
+
+  .patio-handle-image {
+    height: 90px;
+  }
+
+  .patio-review-page {
+    padding: 18px;
+  }
+
+  .patio-review-form label {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .patio-review-included p {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .patio-summary-page {
+    padding: 14px;
+  }
+
+  .patio-summary-sheet {
+    min-height: 0;
+    padding: 22px 18px;
+  }
+
+  .patio-summary-header {
+    grid-template-columns: 1fr;
+  }
+
+  .patio-summary-header .quote-logo {
+    justify-self: start;
+  }
+
+  .patio-summary-body {
+    grid-template-columns: 1fr;
+  }
+
+  .patio-summary-visual img {
+    width: min(280px, 100%);
+  }
+
   .customer-header {
     align-items: flex-start;
     flex-direction: column;
@@ -830,6 +1653,15 @@ button {
 
   .customer-header-actions {
     flex-wrap: wrap;
+  }
+
+  .marketsharp-import-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .marketsharp-import-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .saved-red-sheet-row {
@@ -2107,6 +2939,8 @@ body.print-no-pricing .quote-total-row {
 
 .quote-logo {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   align-self: start;
   padding-top: 0;
@@ -2117,6 +2951,19 @@ body.print-no-pricing .quote-total-row {
   display: block;
   width: 178px;
   height: auto;
+}
+
+.quote-program-logo {
+  margin-top: 4px;
+  color: var(--gold);
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.quote-program-logo span {
+  color: var(--blue);
+  font-weight: 800;
 }
 
 .quote-company p,
@@ -2135,8 +2982,18 @@ body.print-no-pricing .quote-total-row {
 
 .quote-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 245px;
+  grid-template-columns: 245px minmax(0, 1fr);
   gap: 28px;
+}
+
+.quote-summary {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.quote-details {
+  grid-column: 2;
+  grid-row: 1;
 }
 
 .quote-sheet h3 {
@@ -2349,18 +3206,27 @@ body.print-no-pricing .quote-total-row {
   body.printing-red-sheet .red-sheet-quote-pages .quote-sheet {
     zoom: 0.95;
     margin: 0 auto;
-    break-before: page;
-    page-break-before: always;
     box-shadow: none;
   }
 
-  body.printing-red-sheet-ios .red-sheet,
-  body.printing-red-sheet-ios .red-sheet-quote-pages .quote-sheet {
+  body.printing-red-sheet .red-sheet-quote-page-shell {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  body.printing-red-sheet-ios .red-sheet {
     zoom: 0.78 !important;
     margin-bottom: -2.42in;
   }
 
   body.printing-red-sheet-ios .red-sheet-quote-pages .quote-sheet {
+    zoom: 1 !important;
+    transform: scale(0.74);
+    transform-origin: top center;
+  }
+
+  body.printing-red-sheet-ios .red-sheet-quote-page-shell {
+    height: 8.14in;
     break-before: page;
     page-break-before: always;
     break-inside: avoid;

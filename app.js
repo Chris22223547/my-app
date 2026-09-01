@@ -578,6 +578,15 @@ const validUsers = {
 let customFrameHeight = "";
 let activeQuoteCustomer = null;
 let activeQuoteId = null;
+let itemCategoryReturnView = "quoteDetail";
+let selectedPatioDoorType = "";
+let selectedTwoPanelSize = "";
+let selectedPatioGlassOption = "";
+let selectedPatioLowEOption = "";
+let selectedPatioPaintOption = "";
+let selectedPatioExteriorColor = "";
+let selectedPatioInteriorColor = "";
+let selectedPatioHandleOption = "";
 let currentUsername = sessionStorage.getItem("westBuiltDoorBuilderUser") || "";
 let savedQuotesCache = [];
 let savedRedSheetsCache = [];
@@ -1289,6 +1298,135 @@ function setCustomerDetails(customer = {}) {
   });
 }
 
+function decodeQuotedPrintable(value) {
+  const source = String(value || "").replace(/=\r?\n/g, "");
+  const bytes = [];
+  for (let index = 0; index < source.length; index += 1) {
+    const hex = source.slice(index + 1, index + 3);
+    if (source[index] === "=" && /^[0-9a-f]{2}$/i.test(hex)) {
+      bytes.push(Number.parseInt(hex, 16));
+      index += 2;
+    } else {
+      const encoded = new TextEncoder().encode(source[index]);
+      bytes.push(...encoded);
+    }
+  }
+  return new TextDecoder().decode(Uint8Array.from(bytes));
+}
+
+function marketSharpMessageText(source) {
+  const decoded = decodeQuotedPrintable(source);
+  const htmlPart = decoded.match(
+    /Content-Type:\s*text\/html[^\r\n]*(?:\r?\n[^\r\n]*)*\r?\n\r?\n([\s\S]*?)(?=\r?\n--[^\r\n]+)/i,
+  );
+  const content = htmlPart?.[1] || decoded;
+  const containsHtml = /<(?:html|body|br|p|div)\b/i.test(content);
+  let messageText = content;
+  if (containsHtml) {
+    const withLineBreaks = content
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p\s*>/gi, "\n")
+      .replace(/<\/div\s*>/gi, "\n");
+    messageText = new DOMParser().parseFromString(withLineBreaks, "text/html").body.textContent || "";
+  }
+  return messageText
+    .replace(/\r/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function parseMarketSharpEmail(source) {
+  const text = marketSharpMessageText(source);
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const contactStart = lines.findIndex((line) => /^Contact:\s*$/i.test(line));
+  const contactLines = contactStart < 0
+    ? []
+    : lines.slice(contactStart + 1).filter((line, index, remaining) => {
+        const endIndex = remaining.findIndex((candidate) =>
+          /^(?:Sales Appointment|Appt Type:|Salesperson:)/i.test(candidate),
+        );
+        return endIndex < 0 || index < endIndex;
+      });
+  const subjectName = lines
+    .find((line) => /^Subject:\s*Sales Appointment with\s+/i.test(line))
+    ?.replace(/^Subject:\s*Sales Appointment with\s+/i, "")
+    .trim() || "";
+  const location = lines
+    .find((line) => /^Location:\s*/i.test(line))
+    ?.replace(/^Location:\s*/i, "")
+    .trim() || "";
+  const candidateLines = contactLines.length ? contactLines : lines;
+  const compactText = candidateLines.join(" ").replace(/\s+/g, " ").trim();
+  const email = candidateLines
+    .map((line) => line.match(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}/i)?.[0] || "")
+    .find(Boolean) || "";
+  const phone = candidateLines.find((line) => {
+    const digits = line.replace(/\D/g, "");
+    return digits.length >= 10 && digits.length <= 11;
+  }) || compactText.match(/(?:\b1[\s.-]*)?\(?\d{3}\)?[\s.-]*\d{3}[\s.-]*\d{4}\b/)?.[0] || "";
+  const cityLine = candidateLines.find((line) => /,\s*(?:ON|Ontario)\b/i.test(line)) || "";
+  const compactLocation = compactText.match(
+    /\b(\d+\s+[A-Za-z0-9 .'-]*?\b(?:Street|St|Crescent|Cres|Road|Rd|Avenue|Ave|Drive|Dr|Court|Ct|Lane|Boulevard|Blvd|Way|Trail))\s+([A-Za-z][A-Za-z .'-]*),\s*(?:ON|Ontario)\b(?:\s+[A-Z]\d[A-Z]\s*\d[A-Z]\d)?/i,
+  );
+  const compactAddress = compactLocation?.[1]?.trim() || "";
+  const compactCity = compactLocation?.[2]?.trim() || "";
+  const address = candidateLines.find(
+    (line) => /\d/.test(line) && line !== phone && !/,\s*(?:ON|Ontario)\b/i.test(line),
+  ) || location.split(",")[0]?.trim() || "";
+  const city = candidateLines.length === 1
+    ? compactCity || location.split(",")[1]?.trim() || ""
+    : cityLine.split(",")[0]?.trim() || location.split(",")[1]?.trim() || compactCity;
+  const compactName = compactLocation?.index > 0 ? compactText.slice(0, compactLocation.index).trim() : "";
+  const resolvedAddress = address || compactAddress;
+  const customerName = contactLines[0] && contactLines[0] !== resolvedAddress
+    ? contactLines[0]
+    : subjectName || compactName || candidateLines.find((line) => !/\d|@|:/.test(line)) || "";
+  return {
+    customerName,
+    customerPhone: formatPhoneNumber(phone),
+    customerAddress: resolvedAddress,
+    customerEmail: email,
+    customerCity: city,
+  };
+}
+
+function showMarketSharpImportStatus(message, success = false) {
+  const status = document.getElementById("marketSharpImportStatus");
+  status.textContent = message;
+  status.classList.toggle("success", success);
+  status.hidden = false;
+}
+
+function importMarketSharpEmail(source) {
+  const customer = parseMarketSharpEmail(source);
+  const importedFields = Object.values(customer).filter(Boolean).length;
+  if (!customer.customerName || importedFields < 3) {
+    showMarketSharpImportStatus("Customer information could not be found in that email.");
+    return false;
+  }
+  setCustomerDetails(customer);
+  activeQuoteCustomer = customer;
+  showMarketSharpImportStatus(
+    `Imported ${importedFields} customer fields for ${customer.customerName}. Review the information below.`,
+    true,
+  );
+  return true;
+}
+
+function resetMarketSharpImport() {
+  document.getElementById("marketSharpImportPanel").hidden = true;
+  document.getElementById("marketSharpEmailFile").value = "";
+  document.getElementById("marketSharpEmailText").value = "";
+  const status = document.getElementById("marketSharpImportStatus");
+  status.hidden = true;
+  status.classList.remove("success");
+}
+
 function customerKey(customer = {}) {
   const email = (customer.customerEmail || "").trim().toLowerCase();
   const phone = (customer.customerPhone || "").replace(/\D/g, "");
@@ -1358,6 +1496,7 @@ function startNewQuote() {
   setCustomerDetails();
   document.getElementById("notes").value = "";
   document.getElementById("location").value = "";
+  resetMarketSharpImport();
   setActiveView("customer");
 }
 
@@ -1423,8 +1562,210 @@ function addItemForCustomer(customer) {
   activeQuoteCustomer = customer || null;
   activeQuoteId = null;
   setCustomerDetails(activeQuoteCustomer);
+  itemCategoryReturnView = "quoteDetail";
+  setActiveView("itemCategory");
+}
+
+function openItemCategoryPage(customer, returnView) {
+  activeQuoteCustomer = customer || null;
+  activeQuoteId = null;
+  itemCategoryReturnView = returnView;
+  setActiveView("itemCategory");
+}
+
+function selectItemCategory(category) {
+  if (category === "patio-doors") {
+    selectedPatioDoorType = "";
+    selectedTwoPanelSize = "";
+    selectedPatioGlassOption = "";
+    selectedPatioLowEOption = "";
+    selectedPatioPaintOption = "";
+    selectedPatioExteriorColor = "";
+    selectedPatioInteriorColor = "";
+    selectedPatioHandleOption = "";
+    setActiveView("patioDoors");
+    return;
+  }
+
+  if (category !== "entry-doors") {
+    const button = document.querySelector(`[data-item-category="${category}"]`);
+    alert(`${button?.textContent?.trim() || "This category"} will be added next.`);
+    return;
+  }
+
+  setCustomerDetails(activeQuoteCustomer);
   applyNewItemDefaults();
   setActiveView("builder");
+}
+
+function populatePatioPaintColors() {
+  const colors = [
+    paintColors.find(([value]) => value === "cream-white"),
+    paintColors.find(([value]) => value === "chantilly-lace"),
+    ...paintColors
+      .filter(([value]) => !["cream-white", "chantilly-lace"].includes(value))
+      .sort((a, b) => a[1].localeCompare(b[1])),
+  ];
+  const options =
+    '<option value="">Select colour...</option>' +
+    colors.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+  document.getElementById("patioExteriorColor").innerHTML = options;
+  document.getElementById("patioReviewColour").innerHTML = options;
+}
+
+function openPatioColorPage() {
+  const needsInteriorColor = selectedPatioPaintOption === "painted-in-and-out";
+  document.getElementById("patioColorLabel").textContent = needsInteriorColor ? "Exterior and Interior Colour" : "Exterior Colour";
+  document.getElementById("patioExteriorColor").value = selectedPatioExteriorColor;
+  document.getElementById("patioColorWarning").hidden = true;
+  setActiveView("patioColors");
+}
+
+function patioPaintColorLabel(value) {
+  return paintColors.find(([colorValue]) => colorValue === value)?.[1] || "White";
+}
+
+function patioSizeLabel(value) {
+  return {
+    "1500-5": "5 Foot",
+    "1800-6": "6 Foot",
+    "2400-8": "8 Foot",
+    custom: "Custom",
+  }[value] || "Selected Size";
+}
+
+function updatePatioReviewFields() {
+  const glass = document.getElementById("patioReviewGlass").value;
+  const paint = document.getElementById("patioReviewPaint").value;
+  document.getElementById("patioReviewLowEField").hidden = glass !== "regular-clear-low-e";
+  document.getElementById("patioReviewColourField").hidden = paint === "white";
+  document.getElementById("patioReviewColourLabel").textContent =
+    paint === "painted-in-and-out" ? "Exterior and Interior Colour" : "Exterior Colour";
+  document.getElementById("patioReviewWarning").hidden = true;
+}
+
+function openPatioReviewPage() {
+  document.getElementById("patioReviewType").value = selectedPatioDoorType || "two-panel";
+  document.getElementById("patioReviewSize").value = selectedTwoPanelSize || "1500-5";
+  document.getElementById("patioReviewGlass").value = selectedPatioGlassOption || "regular-clear-low-e";
+  document.getElementById("patioReviewLowE").value = selectedPatioLowEOption || "";
+  document.getElementById("patioReviewPaint").value = selectedPatioPaintOption || "white";
+  document.getElementById("patioReviewColour").value = selectedPatioExteriorColor || "";
+  document.getElementById("patioReviewHandle").value = selectedPatioHandleOption || "contemporary-white";
+  updatePatioReviewFields();
+  setActiveView("patioReview");
+}
+
+function patioOptionsSnapshot() {
+  return {
+    doorType: selectedPatioDoorType || "two-panel",
+    size: selectedTwoPanelSize || "1500-5",
+    glass: selectedPatioGlassOption || "regular-clear-low-e",
+    lowE: selectedPatioGlassOption === "regular-clear-low-e" ? selectedPatioLowEOption : "",
+    paint: selectedPatioPaintOption || "white",
+    exteriorColour: selectedPatioExteriorColor || "polytex-white-141",
+    interiorColour: selectedPatioInteriorColor || "polytex-white-141",
+    handle: selectedPatioHandleOption || "contemporary-white",
+  };
+}
+
+function applySavedPatioQuoteState(quote) {
+  const options = quote.patioOptions || {};
+  activeQuoteCustomer = quote.customer || null;
+  activeQuoteId = quote.id;
+  setCustomerDetails(quote.customer);
+  selectedPatioDoorType = options.doorType || "two-panel";
+  selectedTwoPanelSize = options.size || "1500-5";
+  selectedPatioGlassOption = options.glass || "regular-clear-low-e";
+  selectedPatioLowEOption = options.lowE || "";
+  selectedPatioPaintOption = options.paint || "white";
+  selectedPatioExteriorColor = options.exteriorColour || "polytex-white-141";
+  selectedPatioInteriorColor = options.interiorColour || "polytex-white-141";
+  selectedPatioHandleOption = options.handle || "contemporary-white";
+}
+
+function restorePatioQuote(quote) {
+  applySavedPatioQuoteState(quote);
+  openPatioReviewPage();
+}
+
+async function saveCurrentPatioQuote() {
+  const quotes = readSavedQuotes();
+  const existingQuote = activeQuoteId ? quotes.find((item) => item.id === activeQuoteId) : null;
+  const customer = activeQuoteCustomer || customerDetails();
+  const quote = {
+    id: existingQuote?.id || Date.now().toString(),
+    quoteNumber: existingQuote?.quoteNumber || generateQuoteNumber(),
+    date: existingQuote?.date || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    createdBy: existingQuote?.createdBy || currentUserDisplayName(),
+    createdByUsername: existingQuote?.createdByUsername || currentUsername,
+    title: customer.customerName || "Patio Door",
+    total: Number(existingQuote?.total) || 0,
+    customer,
+    customerKey: customerKey(customer),
+    itemType: "patio-door",
+    patioOptions: patioOptionsSnapshot(),
+  };
+  const updatedQuotes = existingQuote
+    ? quotes.map((item) => (item.id === existingQuote.id ? quote : item))
+    : [...quotes, quote];
+  writeSavedQuotes(updatedQuotes);
+  await syncQuoteToSharedStorage(quote);
+  activeQuoteId = quote.id;
+  renderSavedQuotes();
+  openQuoteDetail(quote.id);
+}
+
+function renderPatioSummary() {
+  const glassLabels = {
+    "regular-clear-low-e": "Regular Clear Low-E",
+    "with-blinds": "With Blinds",
+  };
+  const paintLabels = {
+    white: "White",
+    "painted-out-white-in": "Painted Out, White In",
+    "painted-in-and-out": "Painted In and Out",
+  };
+  const handleLabels = {
+    "contemporary-white": "Contemporary (White)",
+    "contemporary-black": "Contemporary (Black)",
+    "contemporary-satin-nickel": "Contemporary (Satin Nickel)",
+    "contemporary-black-white": "Contemporary (Black/White)",
+  };
+  const sizeImages = {
+    "1500-5": "assets/patio-doors/two-panel-sizes/1500-5-clean.png",
+    "1800-6": "assets/patio-doors/two-panel-sizes/1800-6-clean.png",
+    "2400-8": "assets/patio-doors/two-panel-sizes/2400-8.png",
+    custom: "assets/patio-doors/two-panel-sizes/custom.png",
+  };
+  const customer = activeQuoteCustomer || customerDetails();
+  const customerName = customer.customerName || "";
+  document.getElementById("patioSummaryCustomer").textContent = customerName;
+  document.getElementById("patioSummaryCustomerName").textContent = customerName;
+  document.getElementById("patioSummaryCustomerPhone").textContent = customer.customerPhone || "";
+  document.getElementById("patioSummaryCustomerEmail").textContent = customer.customerEmail || "";
+  document.getElementById("patioSummaryCustomerAddress").textContent = customer.customerAddress || "";
+  document.getElementById("patioSummaryCustomerCity").textContent = customer.customerCity || "";
+  const summaryImage = document.getElementById("patioSummaryImage");
+  summaryImage.src = sizeImages[selectedTwoPanelSize] || sizeImages["1500-5"];
+  const sizeLabel = patioSizeLabel(selectedTwoPanelSize);
+  summaryImage.alt = `${sizeLabel} patio door`;
+  document.getElementById("patioSummaryDoor").textContent = `Two Panel - ${sizeLabel}`;
+  document.getElementById("patioSummaryGlass").textContent = glassLabels[selectedPatioGlassOption] || "";
+  const lowELine = document.getElementById("patioSummaryLowE");
+  lowELine.textContent = selectedPatioGlassOption === "regular-clear-low-e" ? `Low-E Option - ${selectedPatioLowEOption}` : "";
+  lowELine.hidden = !lowELine.textContent;
+  document.getElementById("patioSummaryPaint").textContent = paintLabels[selectedPatioPaintOption] || "";
+  const colourLine = document.getElementById("patioSummaryColour");
+  if (selectedPatioPaintOption === "painted-out-white-in") {
+    colourLine.textContent = `Exterior Colour - ${patioPaintColorLabel(selectedPatioExteriorColor)}; Interior Colour - White`;
+  } else if (selectedPatioPaintOption === "painted-in-and-out") {
+    colourLine.textContent = `Exterior and Interior Colour - ${patioPaintColorLabel(selectedPatioExteriorColor)}`;
+  } else {
+    colourLine.textContent = "Exterior and Interior Colour - White";
+  }
+  document.getElementById("patioSummaryHandle").textContent = handleLabels[selectedPatioHandleOption] || "";
 }
 
 function applySavedQuoteState(quote) {
@@ -1675,11 +2016,31 @@ function renderQuoteDetail(quote) {
   document.getElementById("quoteItemsList").innerHTML = items
     .map(
       (item) => {
-        const systemSummary = labels.systemType[item.values?.systemType] || "Door";
-        const locationSummary = item.location || "Location not entered";
-        const materialSummary = item.values?.grainFilter === "steel" ? "Steel Door" : "Fiberglass Door";
-        const doorDescription = savedDoorDescription(item.values);
-        const exteriorFinish = savedExteriorFinish(item.values);
+        const isPatioDoor = item.itemType === "patio-door";
+        const patio = item.patioOptions || {};
+        const systemSummary = isPatioDoor ? "Patio Door" : labels.systemType[item.values?.systemType] || "Door";
+        const locationSummary = isPatioDoor
+          ? `${patio.doorType === "two-panel" ? "Two Panel" : "Patio Door"} - ${patioSizeLabel(patio.size)}`
+          : item.location || "Location not entered";
+        const materialSummary = isPatioDoor
+          ? patio.glass === "with-blinds"
+            ? "With Blinds"
+            : `Regular Clear Low-E${patio.lowE ? ` - ${patio.lowE}` : ""}`
+          : item.values?.grainFilter === "steel"
+            ? "Steel Door"
+            : "Fiberglass Door";
+        const doorDescription = isPatioDoor
+          ? {
+              white: "White",
+              "painted-out-white-in": "Painted Out, White In",
+              "painted-in-and-out": "Painted In and Out",
+            }[patio.paint] || "Paint not selected"
+          : savedDoorDescription(item.values);
+        const exteriorFinish = isPatioDoor
+          ? patio.paint === "white"
+            ? "White"
+            : patioPaintColorLabel(patio.exteriorColour)
+          : savedExteriorFinish(item.values);
         return `<article class="quote-item-row">
         <label class="red-sheet-select" title="Include ${escapeHtml(item.quoteNumber)} in Red Sheet">
           <input class="red-sheet-item-select" type="checkbox" value="${escapeHtml(item.id)}" aria-label="Include ${escapeHtml(item.quoteNumber)} in Red Sheet" />
@@ -1690,7 +2051,7 @@ function renderQuoteDetail(quote) {
           <p>${escapeHtml(locationSummary)}</p>
           <p>${escapeHtml(materialSummary)}</p>
           <p>${escapeHtml(doorDescription)}</p>
-          <p>Exterior Panel - ${escapeHtml(exteriorFinish)}</p>
+          <p>${isPatioDoor ? "Colour" : "Exterior Panel"} - ${escapeHtml(exteriorFinish)}</p>
           <p>${new Date(item.date).toLocaleDateString("en-CA")} - ${currency.format(item.total || 0)}</p>
         </div>
         <div class="quote-item-actions">
@@ -1760,7 +2121,10 @@ function buildRedSheetQuotePages(selectedItems) {
     quotePage.classList.add("red-associated-quote");
     const pageNumber = quotePage.querySelector(".quote-page");
     if (pageNumber) pageNumber.textContent = `Page ${index + 2} of ${totalPages}`;
-    quotePages.appendChild(quotePage);
+    const pageShell = document.createElement("div");
+    pageShell.className = "red-sheet-quote-page-shell";
+    pageShell.appendChild(quotePage);
+    quotePages.appendChild(pageShell);
   });
 
   if (savedQuote) {
@@ -2854,22 +3218,42 @@ function setActiveView(view) {
   const quoteActive = view === "quote";
   const quotesActive = view === "quotes";
   const customerActive = view === "customer";
+  const itemCategoryActive = view === "itemCategory";
+  const patioDoorsActive = view === "patioDoors";
+  const twoPanelSizesActive = view === "twoPanelSizes";
+  const patioGlassActive = view === "patioGlass";
+  const patioLowEActive = view === "patioLowE";
+  const patioPaintActive = view === "patioPaint";
+  const patioColorsActive = view === "patioColors";
+  const patioHandleActive = view === "patioHandle";
+  const patioReviewActive = view === "patioReview";
+  const patioSummaryActive = view === "patioSummary";
   const quoteDetailActive = view === "quoteDetail";
   const redSheetActive = view === "redSheet";
   const quoteWorkflowActive = ["builder", "quote"].includes(view);
   document.getElementById("quotesPage").hidden = !quotesActive;
   document.getElementById("customerPage").hidden = !customerActive;
+  document.getElementById("itemCategoryPage").hidden = !itemCategoryActive;
+  document.getElementById("patioDoorPage").hidden = !patioDoorsActive;
+  document.getElementById("twoPanelSizePage").hidden = !twoPanelSizesActive;
+  document.getElementById("patioGlassPage").hidden = !patioGlassActive;
+  document.getElementById("patioLowEPage").hidden = !patioLowEActive;
+  document.getElementById("patioPaintPage").hidden = !patioPaintActive;
+  document.getElementById("patioColorPage").hidden = !patioColorsActive;
+  document.getElementById("patioHandlePage").hidden = !patioHandleActive;
+  document.getElementById("patioReviewPage").hidden = !patioReviewActive;
+  document.getElementById("patioSummaryPage").hidden = !patioSummaryActive;
   document.getElementById("quoteDetailPage").hidden = !quoteDetailActive;
   document.getElementById("redSheetPage").hidden = !redSheetActive;
-  document.getElementById("builderView").hidden = quoteActive || quotesActive || customerActive || quoteDetailActive || redSheetActive;
+  document.getElementById("builderView").hidden = quoteActive || quotesActive || customerActive || itemCategoryActive || patioDoorsActive || twoPanelSizesActive || patioGlassActive || patioLowEActive || patioPaintActive || patioColorsActive || patioHandleActive || patioReviewActive || patioSummaryActive || quoteDetailActive || redSheetActive;
   document.getElementById("quoteView").hidden = !quoteActive;
-  document.querySelector(".disclaimer").hidden = quoteActive || quotesActive || customerActive || quoteDetailActive || redSheetActive;
+  document.querySelector(".disclaimer").hidden = quoteActive || quotesActive || customerActive || itemCategoryActive || patioDoorsActive || twoPanelSizesActive || patioGlassActive || patioLowEActive || patioPaintActive || patioColorsActive || patioHandleActive || patioReviewActive || patioSummaryActive || quoteDetailActive || redSheetActive;
   document.querySelector(".toolbar").hidden = !quoteWorkflowActive;
   document.querySelector(".toolbar-left").hidden = !quoteWorkflowActive;
   document.querySelector(".view-tabs").hidden = !quoteWorkflowActive;
   document.getElementById("builderTab").classList.toggle("active", view === "builder");
   document.getElementById("quoteTab").classList.toggle("active", quoteActive);
-  document.getElementById("quotesLink").classList.toggle("active", quotesActive || customerActive || quoteDetailActive || redSheetActive);
+  document.getElementById("quotesLink").classList.toggle("active", quotesActive || customerActive || itemCategoryActive || patioDoorsActive || twoPanelSizesActive || patioGlassActive || patioLowEActive || patioPaintActive || patioColorsActive || patioHandleActive || patioReviewActive || patioSummaryActive || quoteDetailActive || redSheetActive);
   if (quotesActive) renderSavedQuotes();
   if (quoteActive) updateQuoteSheet();
 }
@@ -2890,6 +3274,16 @@ async function setAuthenticated(isAuthenticated) {
   } else {
     document.getElementById("quotesPage").hidden = true;
     document.getElementById("customerPage").hidden = true;
+    document.getElementById("itemCategoryPage").hidden = true;
+    document.getElementById("patioDoorPage").hidden = true;
+    document.getElementById("twoPanelSizePage").hidden = true;
+    document.getElementById("patioGlassPage").hidden = true;
+    document.getElementById("patioLowEPage").hidden = true;
+    document.getElementById("patioPaintPage").hidden = true;
+    document.getElementById("patioColorPage").hidden = true;
+    document.getElementById("patioHandlePage").hidden = true;
+    document.getElementById("patioReviewPage").hidden = true;
+    document.getElementById("patioSummaryPage").hidden = true;
     document.getElementById("quoteDetailPage").hidden = true;
     document.getElementById("redSheetPage").hidden = true;
     document.getElementById("builderView").hidden = true;
@@ -2931,11 +3325,32 @@ document.getElementById("quotesLink").addEventListener("click", (event) => {
 });
 document.getElementById("quoteSearch").addEventListener("input", renderSavedQuotes);
 document.getElementById("newQuoteBtn").addEventListener("click", startNewQuote);
+document.getElementById("openMarketSharpImportBtn").addEventListener("click", () => {
+  const panel = document.getElementById("marketSharpImportPanel");
+  panel.hidden = false;
+  document.getElementById("marketSharpEmailFile").focus();
+});
+document.getElementById("closeMarketSharpImportBtn").addEventListener("click", resetMarketSharpImport);
+document.getElementById("marketSharpEmailFile").addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    importMarketSharpEmail(await file.text());
+  } catch (error) {
+    console.error("Unable to read MarketSharp email", error);
+    showMarketSharpImportStatus("That email file could not be read.");
+  }
+});
+document.getElementById("importMarketSharpTextBtn").addEventListener("click", () => {
+  const source = document.getElementById("marketSharpEmailText").value.trim();
+  if (!source) {
+    showMarketSharpImportStatus("Paste the MarketSharp email content first.");
+    return;
+  }
+  importMarketSharpEmail(source);
+});
 document.getElementById("addItemBtn").addEventListener("click", () => {
-  activeQuoteCustomer = customerDetails();
-  activeQuoteId = null;
-  applyNewItemDefaults();
-  setActiveView("builder");
+  openItemCategoryPage(customerDetails(), "customer");
 });
 document.getElementById("createCustomerRedSheetBtn").addEventListener("click", () => {
   const customer = customerDetails();
@@ -2953,6 +3368,123 @@ document.getElementById("createCustomerRedSheetBtn").addEventListener("click", (
   });
 });
 document.getElementById("detailAddItemBtn").addEventListener("click", () => addItemForCustomer(activeQuoteCustomer));
+document.getElementById("backFromItemCategoryBtn").addEventListener("click", () => setActiveView(itemCategoryReturnView));
+document.querySelectorAll("[data-item-category]").forEach((button) => {
+  button.addEventListener("click", () => selectItemCategory(button.dataset.itemCategory));
+});
+document.getElementById("backFromPatioDoorsBtn").addEventListener("click", () => setActiveView("itemCategory"));
+document.querySelectorAll("[data-patio-door-type]").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedPatioDoorType = button.dataset.patioDoorType;
+    document.querySelectorAll("[data-patio-door-type]").forEach((option) => {
+      option.setAttribute("aria-pressed", String(option === button));
+    });
+    if (selectedPatioDoorType === "two-panel") setActiveView("twoPanelSizes");
+  });
+});
+document.getElementById("backFromTwoPanelSizesBtn").addEventListener("click", () => setActiveView("patioDoors"));
+document.querySelectorAll("[data-two-panel-size]").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedTwoPanelSize = button.dataset.twoPanelSize;
+    document.querySelectorAll("[data-two-panel-size]").forEach((option) => {
+      option.setAttribute("aria-pressed", String(option === button));
+    });
+    if (["1500-5", "1800-6"].includes(selectedTwoPanelSize)) {
+      document.getElementById("patioGlassHeading").textContent = `Two Panel Patio Door - ${patioSizeLabel(selectedTwoPanelSize)}`;
+      setActiveView("patioGlass");
+    }
+  });
+});
+document.getElementById("backFromPatioGlassBtn").addEventListener("click", () => setActiveView("twoPanelSizes"));
+document.querySelectorAll("[data-patio-glass-option]").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedPatioGlassOption = button.dataset.patioGlassOption;
+    document.querySelectorAll("[data-patio-glass-option]").forEach((option) => {
+      option.setAttribute("aria-pressed", String(option === button));
+    });
+    setActiveView(selectedPatioGlassOption === "regular-clear-low-e" ? "patioLowE" : "patioPaint");
+  });
+});
+document.getElementById("backFromPatioLowEBtn").addEventListener("click", () => setActiveView("patioGlass"));
+document.querySelectorAll("[data-patio-low-e-option]").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedPatioLowEOption = button.dataset.patioLowEOption;
+    document.querySelectorAll("[data-patio-low-e-option]").forEach((option) => {
+      option.setAttribute("aria-pressed", String(option === button));
+    });
+    setActiveView("patioPaint");
+  });
+});
+document.getElementById("backFromPatioPaintBtn").addEventListener("click", () => {
+  setActiveView(selectedPatioGlassOption === "regular-clear-low-e" ? "patioLowE" : "patioGlass");
+});
+document.querySelectorAll("[data-patio-paint-option]").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedPatioPaintOption = button.dataset.patioPaintOption;
+    document.querySelectorAll("[data-patio-paint-option]").forEach((option) => {
+      option.setAttribute("aria-pressed", String(option === button));
+    });
+    if (selectedPatioPaintOption === "white") {
+      selectedPatioExteriorColor = "polytex-white-141";
+      selectedPatioInteriorColor = "polytex-white-141";
+      setActiveView("patioHandle");
+    } else {
+      openPatioColorPage();
+    }
+  });
+});
+populatePatioPaintColors();
+document.getElementById("backFromPatioColorBtn").addEventListener("click", () => setActiveView("patioPaint"));
+document.getElementById("patioColorContinueBtn").addEventListener("click", () => {
+  const exteriorColor = document.getElementById("patioExteriorColor").value;
+  const needsInteriorColor = selectedPatioPaintOption === "painted-in-and-out";
+  const valid = Boolean(exteriorColor);
+  document.getElementById("patioColorWarning").hidden = Boolean(valid);
+  if (!valid) return;
+  selectedPatioExteriorColor = exteriorColor;
+  selectedPatioInteriorColor = needsInteriorColor ? exteriorColor : "polytex-white-141";
+  setActiveView("patioHandle");
+});
+document.getElementById("patioExteriorColor").addEventListener("change", () => {
+  document.getElementById("patioColorWarning").hidden = true;
+});
+document.getElementById("backFromPatioHandleBtn").addEventListener("click", () => {
+  setActiveView(selectedPatioPaintOption === "white" ? "patioPaint" : "patioColors");
+});
+document.querySelectorAll("[data-patio-handle-option]").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedPatioHandleOption = button.dataset.patioHandleOption;
+    document.querySelectorAll("[data-patio-handle-option]").forEach((option) => {
+      option.setAttribute("aria-pressed", String(option === button));
+    });
+    openPatioReviewPage();
+  });
+});
+document.getElementById("backFromPatioReviewBtn").addEventListener("click", () => setActiveView("patioHandle"));
+["patioReviewGlass", "patioReviewPaint"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", updatePatioReviewFields);
+});
+document.getElementById("patioReviewFinishBtn").addEventListener("click", () => {
+  const glass = document.getElementById("patioReviewGlass").value;
+  const lowE = document.getElementById("patioReviewLowE").value;
+  const paint = document.getElementById("patioReviewPaint").value;
+  const colour = document.getElementById("patioReviewColour").value;
+  const valid = (glass !== "regular-clear-low-e" || lowE) && (paint === "white" || colour);
+  document.getElementById("patioReviewWarning").hidden = Boolean(valid);
+  if (!valid) return;
+  selectedPatioDoorType = document.getElementById("patioReviewType").value;
+  selectedTwoPanelSize = document.getElementById("patioReviewSize").value;
+  selectedPatioGlassOption = glass;
+  selectedPatioLowEOption = glass === "regular-clear-low-e" ? lowE : "";
+  selectedPatioPaintOption = paint;
+  selectedPatioExteriorColor = paint === "white" ? "polytex-white-141" : colour;
+  selectedPatioInteriorColor = paint === "painted-out-white-in" ? "polytex-white-141" : selectedPatioExteriorColor;
+  selectedPatioHandleOption = document.getElementById("patioReviewHandle").value;
+  renderPatioSummary();
+  setActiveView("patioSummary");
+});
+document.getElementById("backFromPatioSummaryBtn").addEventListener("click", openPatioReviewPage);
+document.getElementById("savePatioQuoteBtn").addEventListener("click", saveCurrentPatioQuote);
 document.getElementById("createRedSheetBtn").addEventListener("click", createRedSheet);
 document.getElementById("backFromRedSheetBtn").addEventListener("click", returnFromRedSheet);
 document.getElementById("refreshRedSheetPricingBtn").addEventListener("click", refreshRedSheetDoorPricing);
@@ -2978,7 +3510,7 @@ async function waitForPrintImages(root) {
 async function createRedSheetPdf() {
   const pageElements = [
     document.getElementById("redSheet"),
-    ...document.querySelectorAll("#redSheetQuotePages > .quote-sheet"),
+    ...document.querySelectorAll("#redSheetQuotePages .quote-sheet"),
   ];
   const pages = [];
   for (const pageElement of pageElements) {
@@ -3094,7 +3626,10 @@ document.getElementById("quoteItemsList").addEventListener("click", (event) => {
   const openButton = event.target.closest(".item-open");
   if (openButton) {
     const quote = readSavedQuotes().find((item) => item.id === openButton.dataset.quoteId);
-    if (quote) restoreQuote(quote);
+    if (quote) {
+      if (quote.itemType === "patio-door") restorePatioQuote(quote);
+      else restoreQuote(quote);
+    }
     return;
   }
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>West Built Door Builder</title>
-    <link rel="stylesheet" href="styles.css?v=iphone-red-sheet-print-v5" />
+    <link rel="stylesheet" href="styles.css?v=marketsharp-import-v20" />
   </head>
   <body>
     <section class="login-view" id="loginView" aria-label="Login">
@@ -67,10 +67,31 @@
               <p>Enter customer details before adding a door item.</p>
             </div>
             <div class="customer-header-actions">
+              <button type="button" id="openMarketSharpImportBtn">Import MarketSharp Email</button>
               <button type="button" id="createCustomerRedSheetBtn">Create Red Sheet</button>
               <button type="button" id="addItemBtn">Add Item</button>
             </div>
           </div>
+          <section class="marketsharp-import" id="marketSharpImportPanel" aria-label="Import MarketSharp Email" hidden>
+            <div class="marketsharp-import-header">
+              <h2>Import MarketSharp Email</h2>
+              <button type="button" id="closeMarketSharpImportBtn" title="Close import" aria-label="Close import">&times;</button>
+            </div>
+            <div class="marketsharp-import-grid">
+              <label>
+                Saved Email File
+                <input id="marketSharpEmailFile" type="file" accept=".eml,message/rfc822,text/plain" />
+              </label>
+              <label>
+                Paste Email Content
+                <textarea id="marketSharpEmailText" rows="7"></textarea>
+              </label>
+            </div>
+            <div class="marketsharp-import-actions">
+              <p id="marketSharpImportStatus" role="status" hidden></p>
+              <button type="button" id="importMarketSharpTextBtn">Import Pasted Email</button>
+            </div>
+          </section>
           <div class="customer-form">
             <label>
               Customer Name
@@ -94,6 +115,293 @@
             </label>
           </div>
         </div>
+      </section>
+
+      <section class="item-category-page" id="itemCategoryPage" hidden>
+        <div class="item-category-panel">
+          <button class="item-category-back" type="button" id="backFromItemCategoryBtn">Back</button>
+          <div class="item-category-heading">
+            <h1>Add Item</h1>
+            <p>Choose an item category.</p>
+          </div>
+          <div class="item-category-grid" aria-label="Item categories">
+            <button type="button" data-item-category="entry-doors">Entry Doors</button>
+            <button type="button" data-item-category="patio-doors">Patio Doors</button>
+            <button type="button" data-item-category="storm-doors">Storm Doors</button>
+            <button type="button" data-item-category="windows">Windows</button>
+            <button type="button" data-item-category="exterior-shutters">Exterior Shutters</button>
+            <button type="button" data-item-category="interior-shutters">Interior Shutters</button>
+            <button type="button" data-item-category="miscellaneous">Miscellaneous</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="patio-door-page" id="patioDoorPage" hidden>
+        <div class="patio-door-panel">
+          <button class="item-category-back" type="button" id="backFromPatioDoorsBtn">Back</button>
+          <div class="item-category-heading">
+            <h1>Patio Doors</h1>
+            <p>Choose a patio door configuration.</p>
+          </div>
+          <div class="patio-door-grid" aria-label="Patio door configurations">
+            <button type="button" class="patio-door-option" data-patio-door-type="two-panel" aria-pressed="false">
+              <span class="patio-door-image"><img src="assets/patio-doors/two-panel.png" alt="Two Panel patio door" /></span>
+              <span>Two Panel</span>
+            </button>
+            <button type="button" class="patio-door-option" data-patio-door-type="three-panel-end" aria-pressed="false">
+              <span class="patio-door-image"><img src="assets/patio-doors/three-panel-end.png" alt="Three Panel End patio door" /></span>
+              <span>Three Panel End</span>
+            </button>
+            <button type="button" class="patio-door-option" data-patio-door-type="three-panel-centre" aria-pressed="false">
+              <span class="patio-door-image"><img src="assets/patio-doors/three-panel-centre.png" alt="Three Panel Centre patio door" /></span>
+              <span>Three Panel Centre</span>
+            </button>
+            <button type="button" class="patio-door-option" data-patio-door-type="four-panel" aria-pressed="false">
+              <span class="patio-door-image"><img src="assets/patio-doors/four-panel.png" alt="Four Panel patio door" /></span>
+              <span>Four Panel</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="patio-door-size-page" id="twoPanelSizePage" hidden>
+        <div class="patio-door-size-panel">
+          <button class="item-category-back" type="button" id="backFromTwoPanelSizesBtn">Back</button>
+          <div class="item-category-heading">
+            <h1>Two Panel Patio Door</h1>
+            <p>Choose a size.</p>
+          </div>
+          <div class="patio-door-size-grid" aria-label="Two Panel patio door sizes">
+            <button type="button" class="patio-door-size-option" data-two-panel-size="1500-5" aria-pressed="false">
+              <span class="patio-door-size-image"><img src="assets/patio-doors/two-panel-sizes/1500-5.png?v=tight-crop-v1" alt="5 Foot patio door" /></span>
+              <span>5 Foot</span>
+            </button>
+            <button type="button" class="patio-door-size-option" data-two-panel-size="1800-6" aria-pressed="false">
+              <span class="patio-door-size-image"><img src="assets/patio-doors/two-panel-sizes/1800-6.png?v=tight-crop-v1" alt="6 Foot patio door" /></span>
+              <span>6 Foot</span>
+            </button>
+            <button type="button" class="patio-door-size-option" data-two-panel-size="2400-8" aria-pressed="false">
+              <span class="patio-door-size-image"><img src="assets/patio-doors/two-panel-sizes/2400-8.png" alt="8 Foot patio door" /></span>
+              <span>8 Foot</span>
+            </button>
+            <button type="button" class="patio-door-size-option" data-two-panel-size="custom" aria-pressed="false">
+              <span class="patio-door-size-image"><img src="assets/patio-doors/two-panel-sizes/custom.png" alt="Custom patio door" /></span>
+              <span>Custom</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="patio-glass-page" id="patioGlassPage" hidden>
+        <div class="patio-glass-panel">
+          <button class="item-category-back" type="button" id="backFromPatioGlassBtn">Back</button>
+          <div class="item-category-heading">
+            <h1 id="patioGlassHeading">Two Panel Patio Door</h1>
+            <p>Choose a glass option.</p>
+          </div>
+          <div class="patio-glass-grid" aria-label="Patio door glass options">
+            <button type="button" class="patio-glass-option" data-patio-glass-option="regular-clear-low-e" aria-pressed="false">Regular Clear Low-E</button>
+            <button type="button" class="patio-glass-option" data-patio-glass-option="with-blinds" aria-pressed="false">With Blinds</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="patio-low-e-page" id="patioLowEPage" hidden>
+        <div class="patio-low-e-panel">
+          <button class="item-category-back" type="button" id="backFromPatioLowEBtn">Back</button>
+          <div class="item-category-heading">
+            <h1>Regular Clear Low-E</h1>
+            <p>Choose an option.</p>
+          </div>
+          <div class="patio-low-e-grid" aria-label="Regular Clear Low-E options">
+            <button type="button" class="patio-low-e-option" data-patio-low-e-option="180" aria-pressed="false">180</button>
+            <button type="button" class="patio-low-e-option" data-patio-low-e-option="272" aria-pressed="false">272</button>
+            <button type="button" class="patio-low-e-option" data-patio-low-e-option="366" aria-pressed="false">366</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="patio-paint-page" id="patioPaintPage" hidden>
+        <div class="patio-paint-panel">
+          <button class="item-category-back" type="button" id="backFromPatioPaintBtn">Back</button>
+          <div class="item-category-heading">
+            <h1>Paint</h1>
+            <p>Choose a paint option.</p>
+          </div>
+          <div class="patio-paint-grid" aria-label="Patio door paint options">
+            <button type="button" class="patio-paint-option" data-patio-paint-option="white" aria-pressed="false">White</button>
+            <button type="button" class="patio-paint-option" data-patio-paint-option="painted-out-white-in" aria-pressed="false">Painted Out, White In</button>
+            <button type="button" class="patio-paint-option" data-patio-paint-option="painted-in-and-out" aria-pressed="false">Painted In and Out</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="patio-color-page" id="patioColorPage" hidden>
+        <div class="patio-color-panel">
+          <button class="item-category-back" type="button" id="backFromPatioColorBtn">Back</button>
+          <div class="item-category-heading">
+            <h1>Paint Colours</h1>
+            <p>Choose the patio door paint colour.</p>
+          </div>
+          <div class="patio-color-form">
+            <label>
+              <span id="patioColorLabel">Exterior Colour</span>
+              <select id="patioExteriorColor"></select>
+            </label>
+          </div>
+          <p class="patio-color-warning" id="patioColorWarning" role="alert" hidden>Please select a paint colour.</p>
+          <button class="patio-color-continue" type="button" id="patioColorContinueBtn">Continue</button>
+        </div>
+      </section>
+
+      <section class="patio-handle-page" id="patioHandlePage" hidden>
+        <div class="patio-handle-panel">
+          <button class="item-category-back" type="button" id="backFromPatioHandleBtn">Back</button>
+          <div class="item-category-heading">
+            <h1>Handle</h1>
+            <p>Choose a handle option.</p>
+          </div>
+          <div class="patio-handle-grid" aria-label="Patio door handle options">
+            <button type="button" class="patio-handle-option" data-patio-handle-option="contemporary-white" aria-pressed="false">
+              <span class="patio-handle-image"><img src="assets/patio-doors/handles/contemporary-white.png" alt="Contemporary White handle" /></span>
+              <span>Contemporary<br />(White)</span>
+            </button>
+            <button type="button" class="patio-handle-option" data-patio-handle-option="contemporary-black" aria-pressed="false">
+              <span class="patio-handle-image"><img src="assets/patio-doors/handles/contemporary-black.png" alt="Contemporary Black handle" /></span>
+              <span>Contemporary<br />(Black)</span>
+            </button>
+            <button type="button" class="patio-handle-option" data-patio-handle-option="contemporary-satin-nickel" aria-pressed="false">
+              <span class="patio-handle-image"><img src="assets/patio-doors/handles/contemporary-satin-nickel.png" alt="Contemporary Satin Nickel handle" /></span>
+              <span>Contemporary<br />(Satin Nickel)</span>
+            </button>
+            <button type="button" class="patio-handle-option" data-patio-handle-option="contemporary-black-white" aria-pressed="false">
+              <span class="patio-handle-image"><img src="assets/patio-doors/handles/contemporary-black-white.png" alt="Contemporary Black and White handle" /></span>
+              <span>Contemporary<br />(Black/White)</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="patio-review-page" id="patioReviewPage" hidden>
+        <div class="patio-review-panel">
+          <button class="item-category-back" type="button" id="backFromPatioReviewBtn">Back</button>
+          <div class="item-category-heading">
+            <h1>Review Patio Door</h1>
+            <p>Review or change the options before finishing.</p>
+          </div>
+          <div class="patio-review-form">
+            <label>
+              Patio Door Type
+              <select id="patioReviewType">
+                <option value="two-panel">Two Panel</option>
+              </select>
+            </label>
+            <label>
+              Size
+              <select id="patioReviewSize">
+                <option value="1500-5">5 Foot</option>
+                <option value="1800-6">6 Foot</option>
+                <option value="2400-8">8 Foot</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <label>
+              Glass
+              <select id="patioReviewGlass">
+                <option value="regular-clear-low-e">Regular Clear Low-E</option>
+                <option value="with-blinds">With Blinds</option>
+              </select>
+            </label>
+            <label id="patioReviewLowEField">
+              Low-E Option
+              <select id="patioReviewLowE">
+                <option value="">Select Low-E option...</option>
+                <option value="180">180</option>
+                <option value="272">272</option>
+                <option value="366">366</option>
+              </select>
+            </label>
+            <label>
+              Paint
+              <select id="patioReviewPaint">
+                <option value="white">White</option>
+                <option value="painted-out-white-in">Painted Out, White In</option>
+                <option value="painted-in-and-out">Painted In and Out</option>
+              </select>
+            </label>
+            <label id="patioReviewColourField">
+              <span id="patioReviewColourLabel">Paint Colour</span>
+              <select id="patioReviewColour"></select>
+            </label>
+            <label>
+              Handle
+              <select id="patioReviewHandle">
+                <option value="contemporary-white">Contemporary (White)</option>
+                <option value="contemporary-black">Contemporary (Black)</option>
+                <option value="contemporary-satin-nickel">Contemporary (Satin Nickel)</option>
+                <option value="contemporary-black-white">Contemporary (Black/White)</option>
+              </select>
+            </label>
+          </div>
+          <div class="patio-review-included">
+            <p><strong>Multi-Point Lock</strong><span>Included</span></p>
+            <p><strong>Foot Bolt</strong><span>Included</span></p>
+          </div>
+          <p class="patio-color-warning" id="patioReviewWarning" role="alert" hidden>Please complete the required options.</p>
+          <button class="patio-review-finish" type="button" id="patioReviewFinishBtn">Finish</button>
+        </div>
+      </section>
+
+      <section class="patio-summary-page" id="patioSummaryPage" hidden>
+        <div class="patio-summary-actions">
+          <button type="button" id="backFromPatioSummaryBtn">Back</button>
+          <button type="button" id="savePatioQuoteBtn">Save</button>
+        </div>
+        <article class="patio-summary-sheet">
+          <header class="patio-summary-header">
+            <div class="patio-summary-company">
+              <h2>West Windows &amp; Doors</h2>
+              <p>2462 Industrial St Unit 1<br />Burlington ON<br />(905) 335-3751</p>
+            </div>
+            <div class="quote-logo" aria-label="West Windows and Doors and West Built logos">
+              <img src="assets/west-windows-logo-2.jpg" alt="West Windows &amp; Doors" />
+              <div class="quote-program-logo" aria-label="West Built"><span>west</span>built</div>
+            </div>
+            <div class="patio-summary-title">
+              <h1>Patio Door Quote</h1>
+              <p id="patioSummaryCustomer"></p>
+            </div>
+          </header>
+          <div class="patio-summary-body">
+            <div class="patio-summary-visual">
+              <h3>View From Outside</h3>
+              <img id="patioSummaryImage" src="assets/patio-doors/two-panel-sizes/1500-5-clean.png" alt="Selected patio door size" />
+              <div class="patio-summary-customer-details">
+                <h3>Customer Information</h3>
+                <p><strong>Name:</strong> <span id="patioSummaryCustomerName"></span></p>
+                <p><strong>Phone:</strong> <span id="patioSummaryCustomerPhone"></span></p>
+                <p><strong>Email:</strong> <span id="patioSummaryCustomerEmail"></span></p>
+                <p><strong>Address:</strong> <span id="patioSummaryCustomerAddress"></span></p>
+                <p><strong>City:</strong> <span id="patioSummaryCustomerCity"></span></p>
+              </div>
+            </div>
+            <div class="patio-summary-details">
+              <h3>Patio Door</h3>
+              <p id="patioSummaryDoor"></p>
+              <h3>Glass</h3>
+              <p id="patioSummaryGlass"></p>
+              <p id="patioSummaryLowE"></p>
+              <h3>Paint</h3>
+              <p id="patioSummaryPaint"></p>
+              <p id="patioSummaryColour"></p>
+              <h3>Handle</h3>
+              <p id="patioSummaryHandle"></p>
+              <h3>Hardware</h3>
+              <p>Multi-Point Lock - Included</p>
+              <p>Foot Bolt - Included</p>
+            </div>
+          </div>
+        </article>
       </section>
 
       <section class="quote-detail-page" id="quoteDetailPage" hidden>
@@ -981,8 +1289,9 @@
               <h2>West Windows &amp; Doors</h2>
               <p>2462 Industrial St Unit 1<br />Burlington ON<br />(905) 335-3751<br /><span id="quoteUserEmail"></span></p>
             </div>
-            <div class="quote-logo" aria-label="West Windows and Doors logo">
+            <div class="quote-logo" aria-label="West Windows and Doors and West Built logos">
               <img src="assets/west-windows-logo-2.jpg" alt="West Windows &amp; Doors" />
+              <div class="quote-program-logo" aria-label="West Built"><span>west</span>built</div>
             </div>
             <div class="quote-title">
               <h1>Quote</h1>
@@ -1065,6 +1374,6 @@
 
     <script src="supabase-config.js?v=unique-custom-color-v1"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="app.js?v=iphone-red-sheet-print-v5"></script>
+    <script src="app.js?v=marketsharp-import-v20"></script>
   </body>
 </html>

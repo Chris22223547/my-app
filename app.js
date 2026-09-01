@@ -2103,6 +2103,36 @@ function formatRedSheetAmount(element) {
   element.textContent = rawValue ? currency.format(redSheetAmountValue(element)) : "";
 }
 
+function restoreSavedItemState(item) {
+  if (item.itemType === "patio-door") {
+    applySavedPatioQuoteState(item);
+    renderPatioSummary();
+    return;
+  }
+  applySavedQuoteState(item);
+}
+
+function cloneRedSheetQuotePage(item, pageNumber, totalPages) {
+  restoreSavedItemState(item);
+  const sourceSelector = item.itemType === "patio-door"
+    ? "#patioSummaryPage .patio-summary-sheet"
+    : "#quoteView > .quote-sheet";
+  const quotePage = cleanCloneIds(document.querySelector(sourceSelector).cloneNode(true));
+  quotePage.classList.add("quote-sheet", "red-associated-quote");
+  if (item.itemType === "patio-door") {
+    quotePage.classList.add("patio-associated-quote");
+    const footer = document.createElement("footer");
+    footer.className = "quote-footer";
+    footer.innerHTML = `<span class="quote-page">Page ${pageNumber} of ${totalPages}</span>`;
+    quotePage.appendChild(footer);
+  } else {
+    const pageLabel = quotePage.querySelector(".quote-page");
+    if (pageLabel) pageLabel.textContent = `Page ${pageNumber} of ${totalPages}`;
+  }
+  makeCloneImagesPrintSafe(quotePage);
+  return quotePage;
+}
+
 function buildRedSheetQuotePages(selectedItems) {
   const totalPages = selectedItems.length + 1;
   const quotePages = document.getElementById("redSheetQuotePages");
@@ -2115,12 +2145,7 @@ function buildRedSheetQuotePages(selectedItems) {
   quotePages.replaceChildren();
 
   selectedItems.forEach((item, index) => {
-    applySavedQuoteState(item);
-    const quotePage = cleanCloneIds(document.querySelector("#quoteView > .quote-sheet").cloneNode(true));
-    makeCloneImagesPrintSafe(quotePage);
-    quotePage.classList.add("red-associated-quote");
-    const pageNumber = quotePage.querySelector(".quote-page");
-    if (pageNumber) pageNumber.textContent = `Page ${index + 2} of ${totalPages}`;
+    const quotePage = cloneRedSheetQuotePage(item, index + 2, totalPages);
     const pageShell = document.createElement("div");
     pageShell.className = "red-sheet-quote-page-shell";
     pageShell.appendChild(quotePage);
@@ -2128,7 +2153,7 @@ function buildRedSheetQuotePages(selectedItems) {
   });
 
   if (savedQuote) {
-    applySavedQuoteState(savedQuote);
+    restoreSavedItemState(savedQuote);
   } else {
     activeQuoteId = savedActiveQuoteId;
     activeQuoteCustomer = savedActiveCustomer;

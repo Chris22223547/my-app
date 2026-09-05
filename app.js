@@ -560,6 +560,8 @@ const currency = new Intl.NumberFormat("en-US", {
 });
 const savedQuotesKey = "westBuiltDoorBuilderQuotes";
 const savedRedSheetsKey = "westBuiltDoorBuilderRedSheets";
+const savedDoorOrdersKey = "westBuiltDoorBuilderDoorOrders";
+const doorOrderDraftKey = "westBuiltDoorBuilderDoorOrderChris";
 const customerFields = ["customerName", "customerPhone", "customerAddress", "customerEmail", "customerCity"];
 const detailCustomerFields = {
   customerName: "detailCustomerNameInput",
@@ -574,6 +576,107 @@ const validUsers = {
   jeff: { password: "jeff123", name: "Jeff", email: "jeff@westwindows.on.ca" },
   ralph: { password: "ralph123", name: "Ralph", email: "ralph@westwindows.on.ca" },
 };
+
+const doorOrderCheckboxes = [
+  ["layout-single", "Single door layout", 139, 347],
+  ["layout-left-sidelite", "Door with left sidelite", 315, 347],
+  ["layout-right-sidelite", "Door with right sidelite", 491, 347],
+  ["layout-two-sidelites", "Door with two sidelites", 667, 347],
+  ["layout-double-left-sidelite", "Double door with left sidelite", 843, 347],
+  ["layout-double-two-sidelites", "Double door with two sidelites", 1020, 347],
+  ...[28, 30, 32, 34, 36, 42].map((size, index) => [`width-${size}`, `Door width ${size}`, 92, 440 + index * 30]),
+  ["height-79", "Door height 79", 184, 440],
+  ["height-95", "Door height 95", 184, 469],
+  ["height-custom", "Other custom door size", 184, 515],
+  ["cutout-yes", "Door cut out yes", 184, 603],
+  ["cutout-no", "Door cut out no", 252, 603],
+  ["type-steel-polytex", "Steel Polytex", 410, 440],
+  ["type-fiberglass-woodgrain", "Fiberglass woodgrain", 410, 469],
+  ["type-fiberglass-smooth", "Fiberglass smooth", 410, 499],
+  ["sidelite-12", "Panelled sidelite width 12", 706, 440],
+  ["sidelite-14", "Panelled sidelite width 14", 706, 469],
+  ["sidelite-custom", "Other custom panelled sidelite", 706, 515],
+  ["sidelite-cutout-yes", "Sidelite cut out yes", 706, 603],
+  ["sidelite-cutout-no", "Sidelite cut out no", 774, 603],
+  ["direct-glaze-size", "Direct glaze size", 954, 440],
+  ["sidelite-seat", "Sidelite seat", 954, 515],
+  ["transom-bead", "Transom bead glass stop", 954, 573],
+  ["sidelite-bead", "Sidelite bead", 954, 631],
+  ["hinge-lhh", "Left hand hinge", 157, 679],
+  ["hinge-rhh", "Right hand hinge", 220, 679],
+  ["swing-in", "In swing", 398, 679],
+  ["swing-out", "Out swing", 446, 679],
+  ["bore-double-standard", "Double bore standard", 611, 679],
+  ["bore-double-2-18", "Double bore both 2 1/8", 781, 679],
+  ["bore-single", "Single bore", 952, 679],
+  ["bore-none", "No bore", 1053, 679],
+  ["bore-multipoint", "Multipoint bore", 611, 708],
+  ["multipoint-yes", "Multipoint gear yes", 207, 741],
+  ["multipoint-no", "Multipoint gear no", 207, 770],
+  ["multipoint-prep-yes", "Multipoint prep yes", 332, 741],
+  ["multipoint-prep-no", "Multipoint prep no", 332, 770],
+  ["multipoint-ferco", "Multipoint type Ferco", 458, 741],
+  ["multipoint-winly", "Multipoint type Winly", 458, 770],
+  ["multipoint-6", "Multipoint size 6 feet", 601, 741],
+  ["multipoint-8", "Multipoint size 8 feet", 601, 770],
+  ["prep-lever-ferco", "Prep lever Ferco", 711, 741],
+  ["prep-lever-winly", "Prep lever Winly", 711, 770],
+  ["prep-lever-aurum", "Prep lever Aurum", 847, 741],
+  ["prep-gripset", "Prep gripset Ferco", 847, 770],
+  ["prep-euro", "Prep Euro pull bar", 1001, 741],
+  ["hinge-polish-black-chrome", "Polish black chrome hinge", 92, 831],
+  ["hinge-bright-brass", "Bright brass hinge", 308, 831],
+  ["hinge-stainless-steel", "Stainless steel hinge", 475, 831],
+  ["hinge-satin-nickel", "Satin nickel hinge", 662, 831],
+  ["hinge-flat-black", "Flat black hinge", 817, 831],
+  ["hinge-antique-bronze", "Antique bronze hinge", 961, 831],
+  ["doorlite", "Doorlite", 193, 879],
+  ["doorlite-frame-pvc-white", "Doorlite frame PVC white", 904, 879],
+  ["doorlite-frame-pvc-wg", "Doorlite frame PVC woodgrain", 1034, 879],
+  ["doorlite-frame-contemporary-white", "Doorlite frame contemporary white", 904, 908],
+  ...["4-5-8-x-84", "6-5-8-x-84", "4-5-8-x-101", "6-5-8-x-101", "7-1-4-x-101"].map((name, index) => [`jamb-${name}`, `Jamb ${name.replaceAll("-", " ")}`, 92, 981 + index * 27]),
+  ...["vinyl-wrap-smooth", "vinyl-wrap-ticked", "primed", "composite-smooth-pvc", "composite-wg-textured", "eastern-white-pine"].map((name, index) => [`material-${name}`, `Material ${name.replaceAll("-", " ")}`, 342, 981 + index * 27]),
+  ...["brickmould", "astragal", "flush-bolts", "ast-shoes", "ext-mullion", "int-mullion-sdl"].map((name, index) => [`other-${name}`, `Other ${name.replaceAll("-", " ")}`, 644, 981 + index * 27]),
+  ["weatherstrip-white", "White weatherstrip", 870, 981],
+  ["weatherstrip-black", "Black weatherstrip", 978, 981],
+  ["corner-seal-white", "White corner seal", 870, 1045],
+  ["corner-seal-black", "Black corner seal", 978, 1045],
+  ["sweep-white", "White sweep", 870, 1111],
+  ["sweep-black", "Black sweep", 978, 1111],
+  ["sill-self-draining", "Self draining sill", 92, 1185],
+  ["sill-standard", "Standard sill", 92, 1212],
+  ["sill-can-am", "Can Am sill", 92, 1239],
+  ["sill-can-am-out", "Can Am out sill", 306, 1185],
+  ["sill-out-bumper", "Out bumper sill", 306, 1212],
+  ["sill-out-box", "Out box sill", 306, 1239],
+  ["sill-colour-mill", "Mill sill colour", 621, 1185],
+  ["sill-colour-black", "Black sill colour", 700, 1185],
+  ...[["1-5-16", 621], ["1-1-2", 700], ["2", 779], ["2-3-4", 857], ["3-1-8", 944], ["4", 1017]].map(([name, x]) => [`extension-${name}`, `Extension ${name.replaceAll("-", " ")}`, x, 1238]),
+  ...[["4-13-16", 92], ["6-13-16", 198], ["5-3-4", 306], ["7-1-4", 396]].map(([name, x]) => [`sill-size-${name}`, `Sill size ${name.replaceAll("-", " ")}`, x, 1289]),
+  ...[["1-1-16", 621], ["2", 700], ["3-1-4", 779], ["4-3-8", 857]].map(([name, x]) => [`can-am-extension-${name}`, `Can Am extension ${name.replaceAll("-", " ")}`, x, 1289]),
+];
+
+const doorOrderTextFields = [
+  ["poNumber", "PO number", 900, 137, 236, 30],
+  ["companyName", "Company name", 900, 190, 238, 28],
+  ["doorCustomSize", "Other custom door size", 223, 535, 155, 27],
+  ["doorCutoutSize", "Door cut out size", 223, 623, 155, 27],
+  ["slabPanel", "Specify slab panel code or brand", 410, 578, 258, 45],
+  ["sideliteCustomSize", "Other custom sidelite size", 748, 535, 173, 27],
+  ["sideliteCutoutSize", "Sidelite cut out size", 748, 623, 173, 27],
+  ["directGlazeSize", "Direct glaze size", 1009, 425, 118, 31],
+  ["doorliteName", "Doorlite name", 295, 866, 303, 31],
+  ["doorliteSize", "Doorlite size", 648, 866, 128, 31],
+  ["doorliteCaming", "Doorlite caming", 295, 897, 303, 28],
+  ["doorliteQuantity", "Doorlite quantity", 648, 897, 128, 28],
+  ["jambCustom", "Additional jamb information", 196, 960, 136, 34],
+  ["stainInterior", "Stain interior", 711, 1328, 180, 34],
+  ["stainExterior", "Stain exterior", 940, 1328, 191, 34],
+  ["extrasLine1", "Extras hardware or notes first line", 90, 1363, 1042, 31],
+  ["extrasNotes", "Additional extras hardware or notes", 90, 1395, 594, 112, "textarea"],
+  ["agreementDate", "Agreement date", 732, 1464, 138, 32],
+  ["agreementSignature", "Agreement signature", 942, 1464, 188, 32],
+];
 
 let customFrameHeight = "";
 let activeQuoteCustomer = null;
@@ -590,6 +693,10 @@ let selectedPatioHandleOption = "";
 let currentUsername = sessionStorage.getItem("westBuiltDoorBuilderUser") || "";
 let savedQuotesCache = [];
 let savedRedSheetsCache = [];
+let savedDoorOrdersCache = [];
+let activeDoorOrderId = null;
+let doorOrderSaveTimer = null;
+let creatingDoorOrder = false;
 let detailCustomerSaveTimer = null;
 let detailCustomerSaveVersion = 0;
 let redSheetReturnQuoteId = null;
@@ -609,6 +716,14 @@ function localQuotes() {
 function localRedSheets() {
   try {
     return JSON.parse(localStorage.getItem(savedRedSheetsKey) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function localDoorOrders() {
+  try {
+    return JSON.parse(localStorage.getItem(savedDoorOrdersKey) || "[]");
   } catch {
     return [];
   }
@@ -724,6 +839,113 @@ function redSheetToDatabaseRow(redSheet) {
     created_by_username: redSheet.createdByUsername || "",
     red_sheet_data: redSheet,
   };
+}
+
+function doorOrderToDatabaseRow(order) {
+  return {
+    id: order.id,
+    order_number: order.orderNumber,
+    title: order.title || "",
+    source_quote_id: order.sourceQuoteId || "",
+    source_quote_number: order.sourceQuoteNumber || "",
+    created_at: order.createdAt,
+    updated_at: order.updatedAt || new Date().toISOString(),
+    created_by: order.createdBy || "",
+    created_by_username: order.createdByUsername || "",
+    order_data: order,
+  };
+}
+
+async function loadSavedDoorOrders() {
+  const localOrders = localDoorOrders();
+  savedDoorOrdersCache = localOrders;
+  if (!sharedStorageEnabled()) return savedDoorOrdersCache;
+
+  try {
+    const rows = await sharedStorageRequest("door_orders?select=order_data&order=updated_at.desc");
+    const merged = new Map(rows.map((row) => [row.order_data?.id, row.order_data]).filter(([id]) => id));
+    const locallyNewer = [];
+    localOrders.forEach((localOrder) => {
+      const remoteOrder = merged.get(localOrder.id);
+      if (!remoteOrder || new Date(localOrder.updatedAt || 0) > new Date(remoteOrder.updatedAt || 0)) {
+        merged.set(localOrder.id, localOrder);
+        locallyNewer.push(localOrder);
+      }
+    });
+    savedDoorOrdersCache = [...merged.values()].map((order) => {
+      let corrected = order;
+      let needsSync = false;
+      if (order.sourceQuoteId && Number(order.autofillVersion || 0) < 2) {
+        corrected = {
+          ...corrected,
+          autofillVersion: 2,
+          checks: {
+            ...(corrected.checks || {}),
+            "weatherstrip-white": false,
+            "weatherstrip-black": false,
+            "corner-seal-white": false,
+            "corner-seal-black": false,
+          },
+        };
+        needsSync = true;
+      }
+      if (Number(order.dateFormatVersion || 0) < 2) {
+        const currentDate = String(corrected.text?.agreementDate || "").trim();
+        const isAutomaticLongDate = /^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}$/i.test(currentDate);
+        let agreementDate = currentDate;
+        if (!currentDate || isAutomaticLongDate) {
+          const dateSource = currentDate ? new Date(currentDate) : new Date(corrected.createdAt || Date.now());
+          agreementDate = doorOrderDate(dateSource);
+        }
+        corrected = {
+          ...corrected,
+          dateFormatVersion: 2,
+          text: { ...(corrected.text || {}), agreementDate },
+        };
+        needsSync = true;
+      }
+      if (!needsSync) return corrected;
+      corrected = {
+        ...order,
+        ...corrected,
+        updatedAt: new Date().toISOString(),
+      };
+      locallyNewer.push(corrected);
+      return corrected;
+    });
+    localStorage.setItem(savedDoorOrdersKey, JSON.stringify(savedDoorOrdersCache));
+    [...new Map(locallyNewer.map((order) => [order.id, order])).values()].forEach((order) =>
+      syncDoorOrderToSharedStorage(order),
+    );
+  } catch (error) {
+    console.warn("Using local door orders because shared storage could not be loaded.", error);
+  }
+  return savedDoorOrdersCache;
+}
+
+async function syncDoorOrderToSharedStorage(order) {
+  if (!sharedStorageEnabled()) return;
+  try {
+    await sharedStorageRequest("door_orders?on_conflict=id", {
+      method: "POST",
+      headers: { Prefer: "resolution=merge-duplicates" },
+      body: JSON.stringify(doorOrderToDatabaseRow(order)),
+    });
+  } catch (error) {
+    console.warn("Door order was saved locally, but shared storage sync failed.", error);
+  }
+}
+
+async function deleteDoorOrderFromSharedStorage(orderId) {
+  if (!sharedStorageEnabled()) return;
+  try {
+    await sharedStorageRequest(`door_orders?id=eq.${encodeURIComponent(orderId)}`, {
+      method: "DELETE",
+      headers: { Prefer: "return=minimal" },
+    });
+  } catch (error) {
+    console.warn("Door order was deleted locally, but shared storage delete failed.", error);
+  }
 }
 
 async function syncRedSheetToSharedStorage(redSheet) {
@@ -1260,6 +1482,15 @@ function writeSavedRedSheets(redSheets) {
   localStorage.setItem(savedRedSheetsKey, JSON.stringify(redSheets));
 }
 
+function readSavedDoorOrders() {
+  return savedDoorOrdersCache;
+}
+
+function writeSavedDoorOrders(orders) {
+  savedDoorOrdersCache = orders;
+  localStorage.setItem(savedDoorOrdersKey, JSON.stringify(orders));
+}
+
 function customerDetails() {
   return Object.fromEntries(customerFields.map((id) => [id, document.getElementById(id).value.trim()]));
 }
@@ -1473,6 +1704,525 @@ function currentUserDisplayName() {
 
 function currentUserEmail() {
   return validUsers[currentUsername]?.email || "";
+}
+
+function positionDoorOrderControl(element, x, y, width, height) {
+  element.style.left = `${(x / 1224) * 100}%`;
+  element.style.top = `${(y / 1584) * 100}%`;
+  element.style.width = `${(width / 1224) * 100}%`;
+  element.style.height = `${(height / 1584) * 100}%`;
+}
+
+function generateDoorOrderNumber() {
+  const existing = new Set(readSavedDoorOrders().map((order) => order.orderNumber));
+  let number = "";
+  do {
+    number = `DO-${Math.floor(100000 + Math.random() * 900000)}`;
+  } while (existing.has(number));
+  return number;
+}
+
+function doorPurchaseOrderYear(date = new Date()) {
+  return String(date.getFullYear()).slice(-2);
+}
+
+function nextLocalDoorPurchaseOrderNumber(date = new Date()) {
+  const year = doorPurchaseOrderYear(date);
+  const usedNumbers = readSavedDoorOrders()
+    .map((order) => order.purchaseOrderNumber || String(order.text?.poNumber || "").match(/^(\d{2}-\d+)/)?.[1] || "")
+    .filter((number) => number.startsWith(`${year}-`))
+    .map((number) => Number(number.split("-")[1]))
+    .filter(Number.isFinite);
+  const startingPreviousNumber = year === "26" ? 28 : 0;
+  return `${year}-${Math.max(startingPreviousNumber, ...usedNumbers) + 1}`;
+}
+
+async function generateDoorPurchaseOrderNumber() {
+  if (sharedStorageEnabled()) {
+    try {
+      const number = await sharedStorageRequest("rpc/next_door_purchase_order", {
+        method: "POST",
+        body: JSON.stringify({ p_order_year: Number(doorPurchaseOrderYear()) }),
+      });
+      if (typeof number === "string" && /^\d{2}-\d+$/.test(number)) return number;
+    } catch (error) {
+      console.warn("Using a local purchase order number because the shared sequence could not be reached.", error);
+    }
+  }
+  return nextLocalDoorPurchaseOrderNumber();
+}
+
+function formatDoorPurchaseOrder(number, customerName = "") {
+  return [number, customerName.trim()].filter(Boolean).join(" ");
+}
+
+function doorOrderDate(date = new Date()) {
+  const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEPT", "OCT", "NOV", "DEC"][date.getMonth()];
+  return `${month} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
+function doorOrderDefaults() {
+  return {
+    checks: { "bore-double-2-18": true },
+    text: {
+      companyName: "West Windows & Doors Ltd.",
+      agreementDate: doorOrderDate(),
+      agreementSignature: "Chris",
+    },
+  };
+}
+
+function captureDoorOrderForm() {
+  const checks = Object.fromEntries(
+    [...document.querySelectorAll(".door-order-check")].map((button) => [button.dataset.field, button.getAttribute("aria-pressed") === "true"]),
+  );
+  const text = Object.fromEntries(
+    [...document.querySelectorAll(".door-order-input")].map((input) => [input.dataset.field, input.value]),
+  );
+  return { checks, text };
+}
+
+function activeDoorOrder() {
+  return readSavedDoorOrders().find((order) => order.id === activeDoorOrderId) || null;
+}
+
+function saveDoorOrderDraft() {
+  if (currentUsername !== "chris" || !activeDoorOrderId) return;
+  const existing = activeDoorOrder();
+  if (!existing) return;
+  const title = document.getElementById("doorOrderTitle").value.trim();
+  const form = captureDoorOrderForm();
+  if (existing.purchaseOrderNumber) {
+    form.text.poNumber = formatDoorPurchaseOrder(existing.purchaseOrderNumber, title);
+    const poInput = document.querySelector('.door-order-input[data-field="poNumber"]');
+    if (poInput) poInput.value = form.text.poNumber;
+  }
+  const updated = {
+    ...existing,
+    ...form,
+    title,
+    updatedAt: new Date().toISOString(),
+  };
+  writeSavedDoorOrders(readSavedDoorOrders().map((order) => (order.id === updated.id ? updated : order)));
+  const status = document.getElementById("doorOrderSaveStatus");
+  status.textContent = "Saving...";
+  clearTimeout(doorOrderSaveTimer);
+  doorOrderSaveTimer = setTimeout(async () => {
+    await syncDoorOrderToSharedStorage(updated);
+    status.textContent = `Saved automatically at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+  }, 650);
+}
+
+function loadDoorOrder(order = {}) {
+  const defaults = doorOrderDefaults();
+  const checks = { ...defaults.checks, ...(order.checks || {}) };
+  const text = { ...defaults.text, ...(order.text || {}) };
+  const boreFields = ["bore-double-standard", "bore-double-2-18", "bore-single", "bore-none", "bore-multipoint"];
+  if (!boreFields.some((field) => checks[field])) checks["bore-double-2-18"] = true;
+  if (!String(text.agreementDate || "").trim()) text.agreementDate = defaults.text.agreementDate;
+  if (!String(text.agreementSignature || "").trim()) text.agreementSignature = "Chris";
+  document.querySelectorAll(".door-order-check").forEach((button) => {
+    const selected = Boolean(checks[button.dataset.field]);
+    button.setAttribute("aria-pressed", String(selected));
+    button.classList.toggle("selected", selected);
+  });
+  document.querySelectorAll(".door-order-input").forEach((input) => {
+    input.value = text[input.dataset.field] ?? "";
+  });
+  document.querySelectorAll(".door-order-colour-select").forEach((select) => {
+    const field = select.dataset.field;
+    select.value = text[field] || "";
+    updateDoorOrderColourControl(select);
+  });
+  document.getElementById("doorOrderTitle").value = order.title || "";
+  document.getElementById("activeDoorOrderNumber").textContent = order.orderNumber || "Door Order";
+}
+
+function doorOrderPaintOptions() {
+  return [
+    paintColors.find(([value]) => value === "cream-white"),
+    paintColors.find(([value]) => value === "chantilly-lace"),
+    ...paintColors
+      .filter(([value]) => !["cream-white", "chantilly-lace"].includes(value))
+      .sort((a, b) => a[1].localeCompare(b[1])),
+  ];
+}
+
+function updateDoorOrderColourControl(select) {
+  const field = select.dataset.field;
+  const customInput = document.querySelector(`.door-order-custom-colour[data-colour-for="${field}"]`);
+  const printValue = document.querySelector(`.door-order-colour-print[data-colour-for="${field}"]`);
+  const isCustom = select.value === "custom";
+  const x = Number(select.dataset.x);
+  const y = Number(select.dataset.y);
+  const width = Number(select.dataset.width);
+  const height = Number(select.dataset.height);
+  positionDoorOrderControl(select, x, y, isCustom ? width * 0.42 : width, height);
+  customInput.hidden = !isCustom;
+  customInput.disabled = !isCustom;
+  printValue.textContent = !select.value
+    ? ""
+    : isCustom
+      ? customInput.value.trim()
+      : select.options[select.selectedIndex]?.textContent || "";
+}
+
+function addDoorOrderColourControl(container, field, label, x, y, width, height) {
+  const select = document.createElement("select");
+  select.className = "door-order-input door-order-colour-select";
+  select.dataset.field = field;
+  select.dataset.x = x;
+  select.dataset.y = y;
+  select.dataset.width = width;
+  select.dataset.height = height;
+  select.setAttribute("aria-label", label);
+  select.innerHTML =
+    '<option value="">Select...</option>' +
+    doorOrderPaintOptions().map(([value, colourLabel]) => `<option value="${value}">${colourLabel}</option>`).join("") +
+    '<option value="custom">Custom</option>';
+  positionDoorOrderControl(select, x, y, width, height);
+
+  const customInput = document.createElement("input");
+  customInput.type = "text";
+  customInput.className = "door-order-input door-order-custom-colour";
+  customInput.dataset.field = `${field}Custom`;
+  customInput.dataset.colourFor = field;
+  customInput.setAttribute("aria-label", `${label} custom colour`);
+  customInput.setAttribute("placeholder", "Type colour");
+  customInput.setAttribute("autocomplete", "off");
+  positionDoorOrderControl(customInput, x + width * 0.42, y, width * 0.58, height);
+  customInput.hidden = true;
+  customInput.disabled = true;
+
+  const printValue = document.createElement("span");
+  printValue.className = "door-order-colour-print";
+  printValue.dataset.colourFor = field;
+  positionDoorOrderControl(printValue, x, y, width, height);
+
+  select.addEventListener("change", () => {
+    updateDoorOrderColourControl(select);
+    if (select.value === "custom") customInput.focus();
+    saveDoorOrderDraft();
+  });
+  customInput.addEventListener("input", () => {
+    updateDoorOrderColourControl(select);
+    saveDoorOrderDraft();
+  });
+  container.append(select, customInput, printValue);
+}
+
+function buildDoorOrderForm() {
+  const container = document.getElementById("doorOrderFields");
+  doorOrderCheckboxes.forEach(([field, label, x, y]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "door-order-check";
+    button.dataset.field = field;
+    button.setAttribute("aria-label", label);
+    button.setAttribute("aria-pressed", "false");
+    button.innerHTML = '<span aria-hidden="true">X</span>';
+    positionDoorOrderControl(button, x, y, 18, 18);
+    button.addEventListener("click", () => {
+      const selected = button.getAttribute("aria-pressed") !== "true";
+      button.setAttribute("aria-pressed", String(selected));
+      button.classList.toggle("selected", selected);
+      saveDoorOrderDraft();
+    });
+    container.appendChild(button);
+  });
+
+  doorOrderTextFields.forEach(([field, label, x, y, width, height, type]) => {
+    const input = document.createElement(type === "textarea" ? "textarea" : "input");
+    if (type !== "textarea") input.type = "text";
+    input.className = "door-order-input";
+    input.dataset.field = field;
+    input.setAttribute("aria-label", label);
+    input.setAttribute("autocomplete", "off");
+    positionDoorOrderControl(input, x, y, width, height);
+    input.addEventListener("input", saveDoorOrderDraft);
+    container.appendChild(input);
+  });
+
+  addDoorOrderColourControl(container, "paintInterior", "Paint interior colour", 198, 1328, 171, 34);
+  addDoorOrderColourControl(container, "paintExterior", "Paint exterior colour", 428, 1328, 180, 34);
+
+  loadDoorOrder({});
+}
+
+function renderDoorOrders() {
+  const query = document.getElementById("doorOrderSearch").value.trim().toLowerCase();
+  const orders = [...readSavedDoorOrders()]
+    .filter((order) => {
+      const searchable = [order.orderNumber, order.title, order.text?.poNumber, order.sourceQuoteNumber].join(" ").toLowerCase();
+      return !query || searchable.includes(query);
+    })
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+  document.getElementById("doorOrdersList").innerHTML = orders.length
+    ? orders.map((order) => `<article class="door-order-row">
+        <div><strong>${escapeHtml(order.orderNumber)}</strong><span>${escapeHtml(order.title || "Untitled order")}</span></div>
+        <div><span>PO ${escapeHtml(order.text?.poNumber || "not entered")}</span><small>Updated ${new Date(order.updatedAt || order.createdAt).toLocaleString("en-CA")}</small></div>
+        <div class="door-order-row-actions">
+          <button class="door-order-open" data-order-id="${escapeHtml(order.id)}" type="button">Open</button>
+          <button class="door-order-copy" data-order-id="${escapeHtml(order.id)}" type="button">Copy</button>
+          <button class="door-order-delete" data-order-id="${escapeHtml(order.id)}" type="button">Delete</button>
+        </div>
+      </article>`).join("")
+    : '<p class="door-order-empty">No saved door orders found.</p>';
+}
+
+function showDoorOrderLibrary() {
+  activeDoorOrderId = null;
+  document.getElementById("doorOrderLibrary").hidden = false;
+  document.getElementById("doorOrderEditor").hidden = true;
+  renderDoorOrders();
+}
+
+function openDoorOrder(orderId) {
+  const order = readSavedDoorOrders().find((item) => item.id === orderId);
+  if (!order) return;
+  const boreFields = ["bore-double-standard", "bore-double-2-18", "bore-single", "bore-none", "bore-multipoint"];
+  const needsDefaultsSaved =
+    !String(order.text?.agreementDate || "").trim() ||
+    !String(order.text?.agreementSignature || "").trim() ||
+    !boreFields.some((field) => order.checks?.[field]);
+  activeDoorOrderId = order.id;
+  loadDoorOrder(order);
+  document.getElementById("doorOrderLibrary").hidden = true;
+  document.getElementById("doorOrderEditor").hidden = false;
+  document.getElementById("doorOrderSaveStatus").textContent = "Saved automatically";
+  setActiveView("doorOrder");
+  if (needsDefaultsSaved) saveDoorOrderDraft();
+}
+
+async function newDoorOrder(prefill = {}) {
+  if (creatingDoorOrder) return;
+  creatingDoorOrder = true;
+  const newOrderButton = document.getElementById("newDoorOrderBtn");
+  if (newOrderButton) newOrderButton.disabled = true;
+  const purchaseOrderNumber = await generateDoorPurchaseOrderNumber();
+  const now = new Date().toISOString();
+  const defaults = doorOrderDefaults();
+  const title = prefill.title || "";
+  const order = {
+    id: crypto.randomUUID ? crypto.randomUUID() : `door-order-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    orderNumber: generateDoorOrderNumber(),
+    title,
+    sourceQuoteId: prefill.sourceQuoteId || "",
+    sourceQuoteNumber: prefill.sourceQuoteNumber || "",
+    autofillVersion: 2,
+    dateFormatVersion: 2,
+    createdAt: now,
+    updatedAt: now,
+    createdBy: currentUserDisplayName(),
+    createdByUsername: currentUsername,
+    purchaseOrderNumber,
+    checks: { ...defaults.checks, ...(prefill.checks || {}) },
+    text: {
+      ...defaults.text,
+      ...(prefill.text || {}),
+      poNumber: formatDoorPurchaseOrder(purchaseOrderNumber, title),
+    },
+  };
+  writeSavedDoorOrders([order, ...readSavedDoorOrders()]);
+  await syncDoorOrderToSharedStorage(order);
+  openDoorOrder(order.id);
+  creatingDoorOrder = false;
+  if (newOrderButton) newOrderButton.disabled = false;
+}
+
+function openDoorOrderForm() {
+  if (currentUsername !== "chris") return;
+  setActiveView("doorOrder");
+  showDoorOrderLibrary();
+}
+
+function clearDoorOrderForm() {
+  if (!window.confirm("Clear every selection and typed entry from this order form?")) return;
+  loadDoorOrder({ id: activeDoorOrderId, orderNumber: activeDoorOrder()?.orderNumber, title: activeDoorOrder()?.title });
+  saveDoorOrderDraft();
+  document.getElementById("doorOrderSaveStatus").textContent = "Form cleared and saved";
+}
+
+async function printDoorOrderForm() {
+  const button = document.getElementById("printDoorOrderBtn");
+  const preview = window.open("", "_blank");
+  button.disabled = true;
+  button.textContent = "Preparing PDF...";
+  document.body.classList.add("exporting-door-order");
+  try {
+    const rendered = await renderElementToJpegDataUrl(document.getElementById("doorOrderSheet"));
+    const pdf = createPdfFromJpeg(jpegDataUrlToBytes(rendered.dataUrl), rendered.width, rendered.height);
+    const url = URL.createObjectURL(pdf);
+    const order = activeDoorOrder();
+    const fileName = `${safeFileName([order?.orderNumber || "Door Order", order?.title].filter(Boolean).join(" - "))}.pdf`;
+    if (preview) {
+      preview.document.title = fileName;
+      preview.location.href = url;
+    } else {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (error) {
+    if (preview) preview.close();
+    alert("The order PDF could not be prepared. Please refresh and try again.");
+    console.error(error);
+  } finally {
+    document.body.classList.remove("exporting-door-order");
+    button.disabled = false;
+    button.textContent = "Print Order";
+  }
+}
+
+async function copyDoorOrder(orderId) {
+  const source = readSavedDoorOrders().find((order) => order.id === orderId);
+  if (!source) return;
+  const purchaseOrderNumber = await generateDoorPurchaseOrderNumber();
+  const now = new Date().toISOString();
+  const title = source.title ? `${source.title} - Copy` : "Copied order";
+  const copy = {
+    ...source,
+    id: crypto.randomUUID ? crypto.randomUUID() : `door-order-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    orderNumber: generateDoorOrderNumber(),
+    title,
+    createdAt: now,
+    updatedAt: now,
+    createdBy: currentUserDisplayName(),
+    createdByUsername: currentUsername,
+    dateFormatVersion: 2,
+    purchaseOrderNumber,
+    checks: { ...(source.checks || {}) },
+    text: {
+      ...(source.text || {}),
+      poNumber: formatDoorPurchaseOrder(purchaseOrderNumber, title),
+      agreementDate: doorOrderDate(),
+      agreementSignature: "Chris",
+    },
+  };
+  writeSavedDoorOrders([copy, ...readSavedDoorOrders()]);
+  syncDoorOrderToSharedStorage(copy);
+  renderDoorOrders();
+}
+
+async function deleteDoorOrder(orderId) {
+  const order = readSavedDoorOrders().find((item) => item.id === orderId);
+  if (!order || !window.confirm(`Delete ${order.orderNumber}?`)) return;
+  writeSavedDoorOrders(readSavedDoorOrders().filter((item) => item.id !== orderId));
+  await deleteDoorOrderFromSharedStorage(orderId);
+  renderDoorOrders();
+}
+
+function optionLabelForValue(selectId, value) {
+  const select = document.getElementById(selectId);
+  return [...(select?.options || [])].find((option) => option.value === value)?.textContent.trim() || value || "";
+}
+
+function doorOrderPrefillFromQuote(quote) {
+  const values = quote.values || {};
+  const checks = {};
+  const text = {
+    companyName: "West Windows & Doors Ltd.",
+    slabPanel: savedDoorDescription(values).split(" - ")[0] || "",
+  };
+  const layoutMap = {
+    single: "layout-single",
+    "single-left-sidelite": "layout-left-sidelite",
+    "single-right-sidelite": "layout-right-sidelite",
+    "single-two-sidelite": "layout-two-sidelites",
+    "double-left-sidelite": "layout-double-left-sidelite",
+    "double-two-sidelite": "layout-double-two-sidelites",
+  };
+  if (layoutMap[values.systemType]) checks[layoutMap[values.systemType]] = true;
+  if (["28", "30", "32", "34", "36", "42"].includes(values.frameWidth)) checks[`width-${values.frameWidth}`] = true;
+  else if (values.frameWidth) text.doorCustomSize = values.frameWidth;
+  if (values.frameHeight === "97.875") checks["height-95"] = true;
+  else if (values.frameHeight === "81.875") checks["height-79"] = true;
+  else if (values.frameHeight) {
+    checks["height-custom"] = true;
+    text.doorCustomSize = [text.doorCustomSize, quote.customFrameHeight || values.frameHeight].filter(Boolean).join(" x ");
+  }
+  checks[values.grainFilter === "steel" ? "type-steel-polytex" : values.grainFilter === "smooth" ? "type-fiberglass-smooth" : "type-fiberglass-woodgrain"] = true;
+  checks[values.frameOption === "woodgrain-composite" ? "material-composite-wg-textured" : "material-composite-smooth-pvc"] = true;
+  checks[values.handing === "right" ? "hinge-rhh" : "hinge-lhh"] = true;
+  checks[values.swingType === "outswing" ? "swing-out" : "swing-in"] = true;
+  const jambMap = { "4.625": "jamb-4-5-8-x-84", "6.625": "jamb-6-5-8-x-84", "7.25": "jamb-7-1-4-x-101" };
+  if (jambMap[values.jambDepth]) checks[jambMap[values.jambDepth]] = true;
+  if (values.brickmould) checks["other-brickmould"] = true;
+  checks["sill-colour-black"] = true;
+  checks["sweep-black"] = true;
+
+  if (values.doorLite && values.doorLite !== "none") {
+    checks["cutout-yes"] = true;
+    checks.doorlite = true;
+    const savedStyle = fusionStylesBySize[values.liteSize]?.find(([value]) => value === values.liteGlassStyle)?.[1];
+    text.doorliteName = values.doorLite === "custom"
+      ? values.liteOption === "frosted" ? "Frosted" : "Low-E/Clear"
+      : savedStyle || values.liteGlassStyle || "Doorlite";
+    text.doorliteSize = optionLabelForValue("liteSize", values.liteSize);
+    text.doorliteQuantity = values.systemType?.startsWith("double") ? "2" : "1";
+    checks[values.liteFrame === "contemporary" ? "doorlite-frame-contemporary-white" : "doorlite-frame-pvc-white"] = true;
+  } else {
+    checks["cutout-no"] = true;
+  }
+  if (values.hardware?.includes("black")) checks["hinge-flat-black"] = true;
+  if (values.hardware?.includes("satin-nickel")) checks["hinge-satin-nickel"] = true;
+  if (values.handleSet === "multipoint") {
+    checks["bore-double-2-18"] = false;
+    checks["bore-multipoint"] = true;
+    checks["multipoint-yes"] = true;
+    checks[values.frameHeight === "97.875" ? "multipoint-8" : "multipoint-6"] = true;
+  }
+  if (values.exteriorFinishType === "paint") {
+    text.paintExterior = values.finish || "";
+    text.paintExteriorCustom = values.finish === "custom" ? values.finishCustom || "" : "";
+  }
+  if (values.interiorFinishType === "paint") {
+    text.paintInterior = values.interiorFinish || "";
+    text.paintInteriorCustom = values.interiorFinish === "custom" ? values.interiorFinishCustom || "" : "";
+  }
+  if (values.exteriorFinishType === "stain") text.stainExterior = optionLabelForValue("finish", values.finish);
+  if (values.interiorFinishType === "stain") text.stainInterior = optionLabelForValue("interiorFinish", values.interiorFinish);
+  if (quote.location) text.extrasLine1 = `Location: ${quote.location}`;
+  if (quote.notes) text.extrasNotes = quote.notes;
+  return {
+    title: quote.customer?.customerName || quote.title || "",
+    sourceQuoteId: quote.id,
+    sourceQuoteNumber: quote.quoteNumber,
+    checks,
+    text,
+  };
+}
+
+function createDoorOrderFromQuote(quoteId) {
+  const quote = readSavedQuotes().find((item) => item.id === quoteId);
+  if (!quote || quote.itemType === "patio-door" || currentUsername !== "chris") return;
+  newDoorOrder(doorOrderPrefillFromQuote(quote));
+}
+
+async function migrateLegacyDoorOrderDraft() {
+  if (readSavedDoorOrders().length || !localStorage.getItem(doorOrderDraftKey)) return;
+  try {
+    const draft = JSON.parse(localStorage.getItem(doorOrderDraftKey) || "{}");
+    if (!Object.keys(draft.checks || {}).length && !Object.keys(draft.text || {}).length) return;
+    const now = draft.updatedAt || new Date().toISOString();
+    const order = {
+      id: crypto.randomUUID ? crypto.randomUUID() : `door-order-${Date.now()}`,
+      orderNumber: generateDoorOrderNumber(),
+      title: "Imported Door Order",
+      createdAt: now,
+      updatedAt: now,
+      createdBy: "Chris",
+      createdByUsername: "chris",
+      checks: draft.checks || {},
+      text: { companyName: "West Windows & Doors Ltd.", ...(draft.text || {}) },
+    };
+    writeSavedDoorOrders([order]);
+    await syncDoorOrderToSharedStorage(order);
+  } catch {
+    // Leave an unreadable legacy draft untouched.
+  }
 }
 
 async function saveCurrentQuote() {
@@ -2057,6 +2807,7 @@ function renderQuoteDetail(quote) {
         <div class="quote-item-actions">
           <button class="item-open" type="button" data-quote-id="${escapeHtml(item.id)}">Open Item</button>
           <button class="item-copy" type="button" data-quote-id="${escapeHtml(item.id)}">Copy</button>
+          ${currentUsername === "chris" && !isPatioDoor ? `<button class="item-order" type="button" data-quote-id="${escapeHtml(item.id)}">Create Order</button>` : ""}
           <button class="item-delete" type="button" data-quote-id="${escapeHtml(item.id)}">Delete</button>
         </div>
       </article>`;
@@ -3255,6 +4006,7 @@ function setActiveView(view) {
   const patioSummaryActive = view === "patioSummary";
   const quoteDetailActive = view === "quoteDetail";
   const redSheetActive = view === "redSheet";
+  const doorOrderActive = view === "doorOrder";
   const quoteWorkflowActive = ["builder", "quote"].includes(view);
   document.getElementById("quotesPage").hidden = !quotesActive;
   document.getElementById("customerPage").hidden = !customerActive;
@@ -3270,15 +4022,17 @@ function setActiveView(view) {
   document.getElementById("patioSummaryPage").hidden = !patioSummaryActive;
   document.getElementById("quoteDetailPage").hidden = !quoteDetailActive;
   document.getElementById("redSheetPage").hidden = !redSheetActive;
-  document.getElementById("builderView").hidden = quoteActive || quotesActive || customerActive || itemCategoryActive || patioDoorsActive || twoPanelSizesActive || patioGlassActive || patioLowEActive || patioPaintActive || patioColorsActive || patioHandleActive || patioReviewActive || patioSummaryActive || quoteDetailActive || redSheetActive;
+  document.getElementById("doorOrderPage").hidden = !doorOrderActive;
+  document.getElementById("builderView").hidden = quoteActive || quotesActive || customerActive || itemCategoryActive || patioDoorsActive || twoPanelSizesActive || patioGlassActive || patioLowEActive || patioPaintActive || patioColorsActive || patioHandleActive || patioReviewActive || patioSummaryActive || quoteDetailActive || redSheetActive || doorOrderActive;
   document.getElementById("quoteView").hidden = !quoteActive;
-  document.querySelector(".disclaimer").hidden = quoteActive || quotesActive || customerActive || itemCategoryActive || patioDoorsActive || twoPanelSizesActive || patioGlassActive || patioLowEActive || patioPaintActive || patioColorsActive || patioHandleActive || patioReviewActive || patioSummaryActive || quoteDetailActive || redSheetActive;
+  document.querySelector(".disclaimer").hidden = quoteActive || quotesActive || customerActive || itemCategoryActive || patioDoorsActive || twoPanelSizesActive || patioGlassActive || patioLowEActive || patioPaintActive || patioColorsActive || patioHandleActive || patioReviewActive || patioSummaryActive || quoteDetailActive || redSheetActive || doorOrderActive;
   document.querySelector(".toolbar").hidden = !quoteWorkflowActive;
   document.querySelector(".toolbar-left").hidden = !quoteWorkflowActive;
   document.querySelector(".view-tabs").hidden = !quoteWorkflowActive;
   document.getElementById("builderTab").classList.toggle("active", view === "builder");
   document.getElementById("quoteTab").classList.toggle("active", quoteActive);
   document.getElementById("quotesLink").classList.toggle("active", quotesActive || customerActive || itemCategoryActive || patioDoorsActive || twoPanelSizesActive || patioGlassActive || patioLowEActive || patioPaintActive || patioColorsActive || patioHandleActive || patioReviewActive || patioSummaryActive || quoteDetailActive || redSheetActive);
+  document.getElementById("orderDoorsLink").classList.toggle("active", doorOrderActive);
   if (quotesActive) renderSavedQuotes();
   if (quoteActive) updateQuoteSheet();
 }
@@ -3291,7 +4045,9 @@ async function setAuthenticated(isAuthenticated) {
       currentUsername = "chris";
       sessionStorage.setItem("westBuiltDoorBuilderUser", currentUsername);
     }
-    await Promise.all([loadSavedQuotes(), loadSavedRedSheets()]);
+    document.getElementById("orderDoorsLink").hidden = currentUsername !== "chris";
+    await Promise.all([loadSavedQuotes(), loadSavedRedSheets(), currentUsername === "chris" ? loadSavedDoorOrders() : Promise.resolve()]);
+    if (currentUsername === "chris") await migrateLegacyDoorOrderDraft();
     updateAll();
     updateSystemScroll();
     updatePanelScroll();
@@ -3311,11 +4067,13 @@ async function setAuthenticated(isAuthenticated) {
     document.getElementById("patioSummaryPage").hidden = true;
     document.getElementById("quoteDetailPage").hidden = true;
     document.getElementById("redSheetPage").hidden = true;
+    document.getElementById("doorOrderPage").hidden = true;
     document.getElementById("builderView").hidden = true;
     document.getElementById("quoteView").hidden = true;
     document.querySelector(".toolbar").hidden = true;
     document.querySelector(".disclaimer").hidden = true;
     currentUsername = "";
+    document.getElementById("orderDoorsLink").hidden = true;
     sessionStorage.removeItem("westBuiltDoorBuilderUser");
   }
 }
@@ -3348,6 +4106,24 @@ document.getElementById("quotesLink").addEventListener("click", (event) => {
   event.preventDefault();
   setActiveView("quotes");
 });
+document.getElementById("orderDoorsLink").addEventListener("click", (event) => {
+  event.preventDefault();
+  openDoorOrderForm();
+});
+document.getElementById("newDoorOrderBtn").addEventListener("click", () => newDoorOrder());
+document.getElementById("backToDoorOrdersBtn").addEventListener("click", showDoorOrderLibrary);
+document.getElementById("doorOrderSearch").addEventListener("input", renderDoorOrders);
+document.getElementById("doorOrderTitle").addEventListener("input", saveDoorOrderDraft);
+document.getElementById("doorOrdersList").addEventListener("click", (event) => {
+  const openButton = event.target.closest(".door-order-open");
+  if (openButton) return openDoorOrder(openButton.dataset.orderId);
+  const copyButton = event.target.closest(".door-order-copy");
+  if (copyButton) return copyDoorOrder(copyButton.dataset.orderId);
+  const deleteButton = event.target.closest(".door-order-delete");
+  if (deleteButton) deleteDoorOrder(deleteButton.dataset.orderId);
+});
+document.getElementById("clearDoorOrderBtn").addEventListener("click", clearDoorOrderForm);
+document.getElementById("printDoorOrderBtn").addEventListener("click", printDoorOrderForm);
 document.getElementById("quoteSearch").addEventListener("input", renderSavedQuotes);
 document.getElementById("newQuoteBtn").addEventListener("click", startNewQuote);
 document.getElementById("openMarketSharpImportBtn").addEventListener("click", () => {
@@ -3648,6 +4424,11 @@ document.getElementById("quotesList").addEventListener("click", (event) => {
   else openCustomerDetailByKey(button.dataset.customerKey);
 });
 document.getElementById("quoteItemsList").addEventListener("click", (event) => {
+  const orderButton = event.target.closest(".item-order");
+  if (orderButton) {
+    createDoorOrderFromQuote(orderButton.dataset.quoteId);
+    return;
+  }
   const openButton = event.target.closest(".item-open");
   if (openButton) {
     const quote = readSavedQuotes().find((item) => item.id === openButton.dataset.quoteId);
@@ -3964,6 +4745,7 @@ window.addEventListener("afterprint", () => {
   document.body.classList.remove("print-no-pricing");
   document.body.classList.remove("printing-red-sheet");
   document.body.classList.remove("printing-red-sheet-ios");
+  document.body.classList.remove("printing-door-order");
   if (previousPrintTitle) {
     document.title = previousPrintTitle;
     previousPrintTitle = "";
@@ -3971,5 +4753,6 @@ window.addEventListener("afterprint", () => {
 });
 
 populatePaintColors();
+buildDoorOrderForm();
 setAuthenticated(sessionStorage.getItem("westBuiltDoorBuilderAuthenticated") === "true");
 updateAll();

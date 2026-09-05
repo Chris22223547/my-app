@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>West Built Door Builder</title>
-    <link rel="stylesheet" href="styles.css?v=patio-red-sheet-fix-v1" />
+    <link rel="stylesheet" href="styles.css?v=door-order-form-v2" />
   </head>
   <body>
     <section class="login-view" id="loginView" aria-label="Login">
@@ -27,6 +27,7 @@
     <aside class="rail auth-required" aria-label="Main navigation">
       <div class="logo"><span>west</span>built</div>
       <a class="rail-link active" href="#" id="quotesLink"><span>▤</span>Quotes</a>
+      <a class="rail-link" href="#" id="orderDoorsLink" hidden><span>☑</span>Order Doors</a>
     </aside>
 
     <main class="builder auth-required">
@@ -458,6 +459,43 @@
             </div>
             <p class="detail-customer-save-status" id="detailCustomerSaveStatus" role="status" hidden></p>
           </section>
+        </div>
+      </section>
+
+      <section class="door-order-page" id="doorOrderPage" hidden>
+        <div class="door-order-library" id="doorOrderLibrary">
+          <div class="door-order-library-head">
+            <div>
+              <h1>Door Orders</h1>
+              <p>Saved orders can be reopened, changed, copied, and printed.</p>
+            </div>
+            <button type="button" id="newDoorOrderBtn">New Order</button>
+          </div>
+          <label class="door-order-search">
+            <span>Search orders</span>
+            <input id="doorOrderSearch" type="search" placeholder="Order number, customer, PO, or quote" />
+          </label>
+          <div class="door-orders-list" id="doorOrdersList"></div>
+        </div>
+
+        <div class="door-order-editor" id="doorOrderEditor" hidden>
+          <div class="door-order-actions">
+            <button type="button" class="door-order-secondary" id="backToDoorOrdersBtn">Back to Orders</button>
+            <div>
+              <h1 id="activeDoorOrderNumber">Door Order</h1>
+              <p id="doorOrderSaveStatus" role="status">Saved automatically</p>
+            </div>
+            <button type="button" class="door-order-secondary" id="clearDoorOrderBtn">Clear Form</button>
+            <button type="button" id="printDoorOrderBtn">Print Order</button>
+          </div>
+          <label class="door-order-title-field">
+            <span>Customer or order name</span>
+            <input id="doorOrderTitle" type="text" autocomplete="off" placeholder="Enter customer or order name" />
+          </label>
+          <div class="door-order-sheet" id="doorOrderSheet" aria-label="Interactive Door Com order form">
+            <img class="door-order-template" src="assets/doorcom-order-form.png" alt="Door Com order form" />
+            <div class="door-order-fields" id="doorOrderFields"></div>
+          </div>
         </div>
       </section>
 
@@ -1374,6 +1412,6 @@
 
     <script src="supabase-config.js?v=unique-custom-color-v1"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="app.js?v=patio-red-sheet-fix-v1"></script>
+    <script src="app.js?v=door-order-po-sequence-v9"></script>
   </body>
 </html>

@@ -1078,7 +1078,8 @@ button {
 
 .quote-detail-actions button,
 .item-open,
-.item-copy {
+.item-copy,
+.item-order {
   border: 0;
   background: var(--blue);
   color: #fff;
@@ -1094,6 +1095,7 @@ button {
 
 .quote-item-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -3139,6 +3141,290 @@ body.print-no-pricing .quote-total-row {
   }
 }
 
+.door-order-page {
+  min-height: calc(100vh - 55px);
+  padding: 24px 32px 48px;
+  overflow: auto;
+  background: #e9edf1;
+}
+
+.door-order-library {
+  max-width: 980px;
+  margin: 0 auto;
+  color: #102235;
+}
+
+.door-order-library-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.door-order-library-head h1,
+.door-order-library-head p {
+  margin: 0;
+}
+
+.door-order-library-head p {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.door-order-library-head button,
+.door-order-row-actions button {
+  min-height: 40px;
+  padding: 0 15px;
+  border: 0;
+  color: #fff;
+  background: var(--blue);
+  font-weight: 800;
+}
+
+.door-order-search {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+
+.door-order-search input,
+.door-order-title-field input {
+  min-height: 42px;
+  padding: 8px 11px;
+  border: 1px solid #bfcbd5;
+  background: #fff;
+  font: inherit;
+}
+
+.door-orders-list {
+  display: grid;
+  gap: 8px;
+}
+
+.door-order-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(230px, 1.25fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 13px 15px;
+  border: 1px solid #cad5de;
+  background: #fff;
+}
+
+.door-order-row > div:not(.door-order-row-actions) {
+  display: grid;
+  gap: 3px;
+}
+
+.door-order-row small,
+.door-order-row span,
+.door-order-empty {
+  color: var(--muted);
+}
+
+.door-order-row-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.door-order-row-actions .door-order-delete {
+  border: 1px solid #d6a29a;
+  color: #9f2f22;
+  background: #fff5f3;
+}
+
+.door-order-title-field {
+  display: grid;
+  gap: 5px;
+  width: 8.5in;
+  margin: 0 auto 12px;
+  color: #102235;
+  font-weight: 700;
+}
+
+.door-order-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 8.5in;
+  margin: 0 auto 12px;
+}
+
+.door-order-actions > div {
+  margin-right: auto;
+}
+
+.door-order-actions h1,
+.door-order-actions p {
+  margin: 0;
+}
+
+.door-order-actions h1 {
+  font-size: 24px;
+}
+
+.door-order-actions p {
+  min-height: 18px;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.door-order-actions button {
+  min-height: 40px;
+  padding: 0 15px;
+  color: #fff;
+  background: var(--blue);
+  border: 0;
+  font-weight: 800;
+}
+
+.door-order-actions .door-order-secondary {
+  color: var(--blue);
+  background: #fff;
+  border: 1px solid #bfcbd5;
+}
+
+.door-order-sheet {
+  position: relative;
+  width: 8.5in;
+  height: 11in;
+  margin: 0 auto;
+  overflow: hidden;
+  color: #111;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(15, 31, 45, 0.18);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.door-order-template,
+.door-order-fields {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.door-order-template {
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+}
+
+.door-order-check,
+.door-order-input {
+  position: absolute;
+  z-index: 1;
+}
+
+.door-order-check {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  color: transparent;
+  background: transparent;
+  border: 0;
+  font: 900 13px/1 Arial, Helvetica, sans-serif;
+}
+
+.door-order-check::after {
+  position: absolute;
+  inset: -6px;
+  content: "";
+}
+
+.door-order-check.selected {
+  color: #d71920;
+}
+
+.door-order-check:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.door-order-input {
+  min-width: 0;
+  min-height: 0;
+  padding: 1px 3px 0;
+  color: #111;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  font: 11px/1.2 Arial, Helvetica, sans-serif;
+}
+
+textarea.door-order-input {
+  padding-top: 2px;
+  resize: none;
+}
+
+.door-order-input:focus {
+  background: rgba(255, 247, 174, 0.76);
+  box-shadow: inset 0 0 0 1px rgba(23, 69, 111, 0.5);
+}
+
+.door-order-colour-select {
+  padding: 0 14px 0 2px;
+  overflow: hidden;
+  background-color: transparent;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.door-order-custom-colour {
+  padding-left: 3px;
+  border-left: 1px solid #9ca8b1;
+  font-size: 10px;
+}
+
+.door-order-custom-colour::placeholder {
+  color: #777;
+}
+
+.door-order-colour-print {
+  position: absolute;
+  z-index: 1;
+  display: none;
+  align-items: center;
+  padding: 1px 3px 0;
+  overflow: hidden;
+  color: #111;
+  font: 11px/1.2 Arial, Helvetica, sans-serif;
+  white-space: nowrap;
+}
+
+body.exporting-door-order .door-order-colour-select,
+body.exporting-door-order .door-order-custom-colour {
+  visibility: hidden;
+}
+
+body.exporting-door-order .door-order-colour-print {
+  display: flex;
+}
+
+@media (max-width: 1100px) {
+  .door-order-page {
+    padding: 18px;
+  }
+
+  .door-order-actions,
+  .door-order-title-field,
+  .door-order-sheet {
+    margin-left: 0;
+  }
+
+  .door-order-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   @page {
     size: letter;
@@ -3234,6 +3520,50 @@ body.print-no-pricing .quote-total-row {
   }
 
   body:not(.printing-red-sheet) .red-sheet-page {
+    display: none !important;
+  }
+
+  body.printing-door-order .quote-view,
+  body.printing-door-order .red-sheet-page {
+    display: none !important;
+  }
+
+  body.printing-door-order .door-order-page {
+    display: block !important;
+    min-height: 0;
+    padding: 0;
+    overflow: visible;
+    background: #fff;
+  }
+
+  body.printing-door-order .door-order-actions {
+    display: none;
+  }
+
+  body.printing-door-order .door-order-sheet {
+    width: 8.5in;
+    height: 11in;
+    margin: 0;
+    box-shadow: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body.printing-door-order .door-order-input:focus {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  body.printing-door-order .door-order-colour-select,
+  body.printing-door-order .door-order-custom-colour {
+    display: none !important;
+  }
+
+  body.printing-door-order .door-order-colour-print {
+    display: flex;
+  }
+
+  body:not(.printing-door-order) .door-order-page {
     display: none !important;
   }
 }

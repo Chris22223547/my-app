@@ -657,8 +657,8 @@ const doorOrderCheckboxes = [
 ];
 
 const doorOrderTextFields = [
-  ["poNumber", "PO number", 900, 137, 236, 30],
-  ["companyName", "Company name", 900, 190, 238, 28],
+  ["poNumber", "PO number", 900, 130, 236, 30],
+  ["companyName", "Company name", 900, 183, 238, 28],
   ["doorCustomSize", "Other custom door size", 223, 535, 155, 27],
   ["doorCutoutSize", "Door cut out size", 223, 623, 155, 27],
   ["slabPanel", "Specify slab panel code or brand", 410, 578, 258, 45],
@@ -673,7 +673,9 @@ const doorOrderTextFields = [
   ["stainInterior", "Stain interior", 711, 1328, 180, 34],
   ["stainExterior", "Stain exterior", 940, 1328, 191, 34],
   ["extrasLine1", "Extras hardware or notes first line", 90, 1363, 1042, 31],
-  ["extrasNotes", "Additional extras hardware or notes", 90, 1395, 594, 112, "textarea"],
+  ["extrasLine2", "Extras hardware or notes second line", 90, 1395, 594, 31],
+  ["extrasLine3", "Extras hardware or notes third line", 90, 1427, 594, 31],
+  ["extrasLine4", "Extras hardware or notes fourth line", 90, 1459, 594, 31],
   ["agreementDate", "Agreement date", 732, 1464, 138, 32],
   ["agreementSignature", "Agreement signature", 942, 1464, 188, 32],
 ];
@@ -1779,7 +1781,12 @@ function captureDoorOrderForm() {
   const text = Object.fromEntries(
     [...document.querySelectorAll(".door-order-input")].map((input) => [input.dataset.field, input.value]),
   );
-  return { checks, text };
+  const textPositions = Object.fromEntries(
+    [...document.querySelectorAll(".door-order-positionable")]
+      .map((input) => [input.dataset.field, input.style.paddingLeft || ""])
+      .filter(([, paddingLeft]) => paddingLeft),
+  );
+  return { checks, text, textPositions };
 }
 
 function activeDoorOrder() {
@@ -1817,6 +1824,12 @@ function loadDoorOrder(order = {}) {
   const defaults = doorOrderDefaults();
   const checks = { ...defaults.checks, ...(order.checks || {}) };
   const text = { ...defaults.text, ...(order.text || {}) };
+  if (text.extrasNotes && ![text.extrasLine2, text.extrasLine3, text.extrasLine4].some(Boolean)) {
+    const legacyLines = String(text.extrasNotes).split(/\r?\n/);
+    text.extrasLine2 = legacyLines[0] || "";
+    text.extrasLine3 = legacyLines[1] || "";
+    text.extrasLine4 = legacyLines.slice(2).join(" ");
+  }
   const boreFields = ["bore-double-standard", "bore-double-2-18", "bore-single", "bore-none", "bore-multipoint"];
   if (!boreFields.some((field) => checks[field])) checks["bore-double-2-18"] = true;
   if (!String(text.agreementDate || "").trim()) text.agreementDate = defaults.text.agreementDate;
@@ -1828,6 +1841,12 @@ function loadDoorOrder(order = {}) {
   });
   document.querySelectorAll(".door-order-input").forEach((input) => {
     input.value = text[input.dataset.field] ?? "";
+  });
+  document.querySelectorAll(".door-order-positionable").forEach((input) => {
+    const savedPosition = order.textPositions?.[input.dataset.field];
+    const defaultPosition = input.dataset.field === "extrasLine1" ? "192px" : "";
+    if (savedPosition || defaultPosition) input.style.paddingLeft = savedPosition || defaultPosition;
+    else input.style.removeProperty("padding-left");
   });
   document.querySelectorAll(".door-order-colour-select").forEach((select) => {
     const field = select.dataset.field;
@@ -1939,6 +1958,16 @@ function buildDoorOrderForm() {
     input.setAttribute("aria-label", label);
     input.setAttribute("autocomplete", "off");
     positionDoorOrderControl(input, x, y, width, height);
+    if (["extrasLine1", "extrasLine2", "extrasLine3", "extrasLine4"].includes(field)) {
+      input.classList.add("door-order-positionable");
+      input.addEventListener("pointerdown", (event) => {
+        if (input.value) return;
+        const bounds = input.getBoundingClientRect();
+        const clickPosition = Math.min(Math.max(event.clientX - bounds.left, 4), Math.max(4, bounds.width - 12));
+        input.style.paddingLeft = `${clickPosition}px`;
+        saveDoorOrderDraft();
+      });
+    }
     input.addEventListener("input", saveDoorOrderDraft);
     container.appendChild(input);
   });
@@ -2185,7 +2214,12 @@ function doorOrderPrefillFromQuote(quote) {
   if (values.exteriorFinishType === "stain") text.stainExterior = optionLabelForValue("finish", values.finish);
   if (values.interiorFinishType === "stain") text.stainInterior = optionLabelForValue("interiorFinish", values.interiorFinish);
   if (quote.location) text.extrasLine1 = `Location: ${quote.location}`;
-  if (quote.notes) text.extrasNotes = quote.notes;
+  if (quote.notes) {
+    const noteLines = String(quote.notes).split(/\r?\n/);
+    text.extrasLine2 = noteLines[0] || "";
+    text.extrasLine3 = noteLines[1] || "";
+    text.extrasLine4 = noteLines.slice(2).join(" ");
+  }
   return {
     title: quote.customer?.customerName || quote.title || "",
     sourceQuoteId: quote.id,

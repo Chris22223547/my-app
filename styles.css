@@ -3348,6 +3348,7 @@ body.print-no-pricing .quote-total-row {
 }
 
 .door-order-input {
+  box-sizing: border-box;
   min-width: 0;
   min-height: 0;
   padding: 1px 3px 0;
@@ -3357,6 +3358,10 @@ body.print-no-pricing .quote-total-row {
   border-radius: 0;
   outline: 0;
   font: 11px/1.2 Arial, Helvetica, sans-serif;
+}
+
+.door-order-positionable {
+  cursor: text;
 }
 
 textarea.door-order-input {

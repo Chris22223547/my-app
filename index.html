@@ -528,12 +528,24 @@
           <div class="red-sheet-line-items" id="redSheetLineItems"></div>
           <div class="red-editable red-extra red-positionable-field red-jamb-trim" contenteditable="true" id="redJambTrim"></div>
           <div class="red-editable red-extra-amount red-jamb-trim-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redJambTrimAmount"></div>
+          <div class="red-choice-group red-jamb-trim-choice" data-red-choice-field="jambTrim" aria-label="Jamb and trim pre-painted Marvin White">
+            <button type="button" data-choice="yes"><span class="red-choice-box" aria-hidden="true"></span>Yes</button>
+            <button type="button" data-choice="no"><span class="red-choice-box" aria-hidden="true"></span>No</button>
+          </div>
           <div class="red-editable red-extra red-positionable-field red-trim-type" contenteditable="true" id="redTrimType"></div>
           <div class="red-editable red-extra-amount red-trim-type-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redTrimTypeAmount"></div>
           <div class="red-editable red-extra red-positionable-field red-alarms" contenteditable="true" id="redAlarms"></div>
           <div class="red-editable red-extra-amount red-alarms-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redAlarmsAmount"></div>
+          <div class="red-choice-group red-alarms-choice" data-red-choice-field="alarms" aria-label="Existing alarms">
+            <button type="button" data-choice="yes"><span class="red-choice-box" aria-hidden="true"></span>Yes</button>
+            <button type="button" data-choice="no"><span class="red-choice-box" aria-hidden="true"></span>No</button>
+          </div>
           <div class="red-editable red-extra red-positionable-field red-blinds" contenteditable="true" id="redBlinds"></div>
           <div class="red-editable red-extra-amount red-blinds-amount red-calculation-amount" contenteditable="true" inputmode="decimal" id="redBlindsAmount"></div>
+          <div class="red-choice-group red-blinds-choice" data-red-choice-field="blinds" aria-label="Take down and reinstall blinds">
+            <button type="button" data-choice="yes"><span class="red-choice-box" aria-hidden="true"></span>Yes</button>
+            <button type="button" data-choice="no"><span class="red-choice-box" aria-hidden="true"></span>No</button>
+          </div>
           <div class="red-editable red-note-line red-positionable-field red-note-line-1" contenteditable="true" id="redNotesLine1"></div>
           <div class="red-editable red-note-line red-positionable-field red-note-line-2" contenteditable="true" id="redNotesLine2"></div>
           <div class="red-editable red-note-line red-positionable-field red-note-line-3" contenteditable="true" id="redNotesLine3"></div>
@@ -1412,6 +1424,6 @@
 
     <script src="supabase-config.js?v=unique-custom-color-v1"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="app.js?v=door-order-note-positioning-v12"></script>
+    <script src="app.js?v=red-sheet-readable-choices-v13"></script>
   </body>
 </html>

@@ -3027,7 +3027,24 @@ function captureRedSheetDocument() {
       paddingLeft: description.style.paddingLeft || "",
     };
   });
-  return { fields, lineItems };
+  const choices = Object.fromEntries(
+    [...document.querySelectorAll("#redSheet .red-choice-group")].map((group) => [
+      group.dataset.redChoiceField,
+      group.querySelector("button.selected")?.dataset.choice || "",
+    ]),
+  );
+  return { fields, lineItems, choices };
+}
+
+function restoreRedSheetChoices(choices = {}) {
+  document.querySelectorAll("#redSheet .red-choice-group").forEach((group) => {
+    const savedChoice = choices[group.dataset.redChoiceField] || "";
+    group.querySelectorAll("button").forEach((button) => {
+      const selected = button.dataset.choice === savedChoice;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+  });
 }
 
 function restoreRedSheetFields(fields = {}) {
@@ -3056,6 +3073,7 @@ async function saveActiveRedSheet(saveVersion = redSheetSaveVersion) {
     updatedAt: new Date().toISOString(),
     fields: documentState.fields,
     lineItems: documentState.lineItems,
+    choices: documentState.choices,
   };
   writeSavedRedSheets(readSavedRedSheets().map((redSheet) => (redSheet.id === updated.id ? updated : redSheet)));
   await syncRedSheetToSharedStorage(updated);
@@ -3084,6 +3102,7 @@ function showRedSheetRecord(redSheet) {
   renderRedSheetLineItems(redSheet.lineItems || []);
   buildRedSheetQuotePages(selectedItems);
   restoreRedSheetFields(redSheet.fields || {});
+  restoreRedSheetChoices(redSheet.choices || {});
   updateRedSheetTotals();
   setActiveView("redSheet");
 }
@@ -3100,6 +3119,7 @@ async function createRedSheet(options = {}) {
   redSheetReturnQuoteId = detailQuoteId || selectedItems[0]?.id || null;
   redSheetReturnCustomerKey = redSheetCustomerKey;
   document.querySelectorAll(".red-positionable-field").forEach((element) => element.style.removeProperty("padding-left"));
+  restoreRedSheetChoices();
   redSheetFieldIds.forEach((id) => setRedSheetText(id));
   setRedSheetText("redCustomerName", customer.customerName);
   setRedSheetText("redCustomerAddress", customer.customerAddress);
@@ -3130,6 +3150,7 @@ async function createRedSheet(options = {}) {
     selectedQuoteIds: selectedIds,
     fields: state.fields,
     lineItems: state.lineItems,
+    choices: state.choices,
   };
   activeRedSheetId = redSheet.id;
   writeSavedRedSheets([redSheet, ...readSavedRedSheets()]);
@@ -4441,6 +4462,21 @@ document.getElementById("redSheet").addEventListener("pointerdown", (event) => {
   const clickPosition = Math.min(Math.max(event.clientX - bounds.left, 4), Math.max(4, bounds.width - 12));
   line.style.paddingLeft = `${clickPosition}px`;
   scheduleRedSheetSave();
+});
+document.getElementById("redSheet").addEventListener("click", (event) => {
+  const button = event.target.closest(".red-choice-group button");
+  if (!button) return;
+  const group = button.closest(".red-choice-group");
+  const wasSelected = button.classList.contains("selected");
+  group.querySelectorAll("button").forEach((choiceButton) => {
+    choiceButton.classList.remove("selected");
+    choiceButton.setAttribute("aria-pressed", "false");
+  });
+  if (!wasSelected) {
+    button.classList.add("selected");
+    button.setAttribute("aria-pressed", "true");
+  }
+  scheduleRedSheetSave(0);
 });
 Object.values(detailCustomerFields).forEach((id) => {
   const input = document.getElementById(id);

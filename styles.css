@@ -3628,3 +3628,72 @@ body.exporting-door-order .door-order-colour-print {
     display: none !important;
   }
 }
+
+/* Phone layout only. Keep desktop and printable document geometry intact. */
+@media screen and (max-width: 700px) {
+  body { overflow: auto; padding-bottom: 0; }
+  .builder { margin-left: 0; height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+  .login-view { min-height: 100vh; min-height: 100dvh; padding: 20px; }
+  .login-card { padding: 24px 20px; }
+  .phase0-status { position: static; gap: 8px; padding: 10px 12px; }
+  .phase0-status strong, .phase0-status #syncStatus { flex-basis: 100%; overflow-wrap: anywhere; }
+  .rail { position: static; width: auto; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px; }
+  .logo { margin: 0 auto 0 0; font-size: 24px; }
+  .rail-link { min-height: 44px; height: auto; font-size: 16px; padding: 6px; }
+  .toolbar { height: auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 8px 12px; }
+  .toolbar-left { grid-column: 1; grid-row: 1; flex-wrap: wrap; gap: 8px; }
+  .toolbar-right { grid-column: 2; grid-row: 1; }
+  .view-tabs { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+  .view-tab { flex: 1; }
+  .tool, .view-tab { height: auto; min-height: 44px; }
+
+  /* Exclude the precisely positioned controls on paper form templates. */
+  :is(.login-view, .toolbar, .quotes-page, .customer-page, .quote-detail-page, .canvas,
+      .item-category-page, .patio-door-page, .patio-door-size-page, .patio-review-page,
+      .door-order-library, .phase0-status) button { min-height: 44px; }
+  :is(.login-view, .quotes-page, .customer-page, .quote-detail-page, .canvas,
+      .patio-review-page, .door-order-library) :is(input, select, textarea) { font-size: 16px; max-width: 100%; }
+  :is(.customer-form, .detail-customer-form, .canvas) :is(input:not([type=checkbox]):not([type=radio]), select) { min-height: 44px; }
+  .quotes-page, .customer-page, .quote-detail-page, .door-order-page { padding: 16px 12px; min-height: 0; }
+  .customer-card, .quote-detail-card { padding: 18px 14px; }
+  .quotes-header, .quote-detail-header, .door-order-library-head { flex-direction: column; align-items: stretch; gap: 12px; }
+  .customer-form { grid-template-columns: minmax(0, 1fr); }
+  .customer-form label:nth-child(3) { grid-column: auto; }
+  .customer-form input, .customer-form label, .detail-customer-form label { width: 100%; min-width: 0; }
+  .customer-header-actions, .quote-detail-actions, .door-order-row-actions { flex-wrap: wrap; }
+  .customer-header-actions button, .quote-detail-actions button { flex: 1 1 130px; }
+  .quote-list-item { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 14px; }
+  .quote-list-item > :not(.quote-open) { grid-column: 1; white-space: normal; overflow-wrap: anywhere; }
+  .quote-list-item .quote-open { grid-column: 2; grid-row: 1 / span 5; }
+  .quote-item-row { grid-template-columns: 24px minmax(0, 1fr); }
+  .quote-item-actions { grid-column: 2; }
+  .quote-item-row p, .door-order-row { overflow-wrap: anywhere; }
+  .door-order-row { grid-template-columns: minmax(0, 1fr); }
+
+  .canvas { grid-template-columns: minmax(0, 1fr); padding: 12px; gap: 20px; }
+  .config-column, .accordion, .accordion-body { min-width: 0; }
+  .accordion-body { padding: 14px 12px; }
+  .field-grid, .frame-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+  .frame-form .outline-field :is(input, select) { width: 100%; }
+  .finish-form { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .finish-form > .outline-field { grid-column: 1; grid-row: auto; width: 100%; }
+  .finish-form .outline-field :is(input, select), .finish-color-field .custom-finish-color { width: 100%; }
+  .finish-form > .finish-color-field { grid-column: 1; }
+  .outline-field { min-width: 0; }
+  .system-picker, .panel-picker { width: 100%; }
+  .system-scroll, .panel-scroll { grid-template-columns: 44px minmax(80px, 170px) 44px; }
+  .system-scroll button, .panel-scroll button { width: 44px; height: 44px; }
+  .check-row { min-height: 44px; }
+  .preview-head { grid-template-columns: minmax(0, 1fr); }
+  .estimate { flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 18px; }
+  .drawing-area { min-height: 0; padding-bottom: 20px; }
+  .price-breakdown { width: 100%; }
+
+  /* Paper previews scroll within their own surface; print dimensions stay fixed. */
+  .quote-view, .red-sheet-page { max-width: 100%; overflow-x: auto; padding: 16px 12px; }
+  .print-preview-actions, .red-sheet-actions, .door-order-actions, .door-order-title-field {
+    width: 100%; flex-wrap: wrap; gap: 10px;
+  }
+  .print-preview-actions button, .red-sheet-actions button, .door-order-actions button { min-height: 44px; }
+  .disclaimer { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+}

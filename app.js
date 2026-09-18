@@ -4046,6 +4046,8 @@ document.getElementById("priceButton").addEventListener("click", () => {
 });
 
 function setActiveView(view) {
+  document.getElementById('buildPage').hidden = view !== 'build';
+  document.getElementById('buildLink').classList.toggle('active', view === 'build');
   const quoteActive = view === "quote";
   const quotesActive = view === "quotes";
   const customerActive = view === "customer";
@@ -4090,6 +4092,7 @@ function setActiveView(view) {
   document.getElementById("orderDoorsLink").classList.toggle("active", doorOrderActive);
   if (quotesActive) renderSavedQuotes();
   if (quoteActive) updateQuoteSheet();
+  if (view === 'build') { document.getElementById('builderView').hidden = true; document.querySelector('.disclaimer').hidden = true; }
 }
 
 async function setAuthenticated(isAuthenticated) {
@@ -4101,6 +4104,7 @@ async function setAuthenticated(isAuthenticated) {
       sessionStorage.setItem("westBuiltDoorBuilderUser", currentUsername);
     }
     document.getElementById("orderDoorsLink").hidden = currentUsername !== "chris";
+    document.getElementById("buildLink").hidden = currentUsername !== "chris";
     await Promise.all([loadSavedQuotes(), loadSavedRedSheets(), currentUsername === "chris" ? loadSavedDoorOrders() : Promise.resolve()]);
     if (currentUsername === "chris") await migrateLegacyDoorOrderDraft();
     updateAll();
@@ -4129,6 +4133,9 @@ async function setAuthenticated(isAuthenticated) {
     document.querySelector(".disclaimer").hidden = true;
     currentUsername = "";
     document.getElementById("orderDoorsLink").hidden = true;
+    document.getElementById("buildLink").hidden = true;
+    document.getElementById("buildPage").hidden = true;
+    document.getElementById("buildSheet").replaceChildren();
     sessionStorage.removeItem("westBuiltDoorBuilderUser");
   }
 }
@@ -4826,3 +4833,104 @@ populatePaintColors();
 buildDoorOrderForm();
 setAuthenticated(sessionStorage.getItem("westBuiltDoorBuilderAuthenticated") === "true");
 updateAll();
+
+// Factory sheets read existing order records; opening/printing never changes an order.
+function openBuildPage(orderId = '') {
+  if (currentUsername !== 'chris') return;
+  const select = document.getElementById('buildOrderSelect');
+  select.innerHTML = '<option value="">Select an order</option>' + readSavedDoorOrders().map(order => `<option value="${escapeHtml(order.id)}">${escapeHtml([order.orderNumber, order.title, order.text?.poNumber].filter(Boolean).join(' · '))}</option>`).join('');
+  select.value = orderId;
+  setActiveView('build');
+  renderBuildSheet();
+}
+
+function renderBuildSheet(preserveSettings = false) {
+  if (currentUsername !== 'chris') return;
+  const order = readSavedDoorOrders().find(item => item.id === document.getElementById('buildOrderSelect').value);
+  const sheet = document.getElementById('buildSheet');
+  sheet.hidden = !order;
+  document.getElementById('buildPdfActions').hidden = !order;
+  document.getElementById('buildEmpty').hidden = !!order;
+  document.getElementById('printBuildBtn').disabled = !order;
+  document.getElementById('buildEditOrderBtn').disabled = !order;
+  sheet.replaceChildren();
+  const settingsPanel = document.getElementById('buildSettings');
+  settingsPanel.hidden = !order;
+  if (!order) return;
+  if (!preserveSettings) BuildSettings.mount(settingsPanel, order.buildRequirements, async requirements => {
+    if (currentUsername !== 'chris') throw Error('Order access is required.');
+    const current = readSavedDoorOrders().find(item => item.id === order.id);
+    if (!current) throw Error('This order is no longer available.');
+    const updated = {...current, buildRequirements: requirements, updatedAt: new Date().toISOString()};
+    writeSavedDoorOrders(readSavedDoorOrders().map(item => item.id === current.id ? updated : item));
+    if (document.getElementById('buildOrderSelect').value === current.id) renderBuildSheet(true);
+    if (!sharedStorageEnabled()) return 'Saved on this browser only. Shared storage is not configured.';
+    try {
+      await sharedStorageRequest('door_orders?on_conflict=id', {method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify(doorOrderToDatabaseRow(updated))});
+      return 'Build requirements saved and synced.';
+    } catch (error) { return 'Saved on this browser only. Sync failed; press Save again to retry.'; }
+  });
+  const text = order.text || {};
+  const build = BuildSettings.description(order.buildRequirements);
+  const group = (title, pattern, fields = []) => {
+    const selections = doorOrderCheckboxes.filter(([key]) => pattern.test(key) && order.checks?.[key]).map(([,label]) => escapeHtml(label));
+    fields.forEach(key => { if (text[key]) selections.push(`<b>${escapeHtml(doorOrderTextFields.find(([field]) => field === key)?.[1] || key)}:</b> ${escapeHtml(text[key])}`); });
+    return `<section class="build-spec"><h3>${title}</h3><p>${selections.join(' - ') || 'Not specified : verify'}</p></section>`;
+  };
+  const colour = key => text[key] === 'custom' ? text[key + 'Custom'] || 'Custom : not specified' : paintColors.find(([value]) => value === text[key])?.[1] || text[key] || 'Not specified';
+  const selected = (pattern, format) => doorOrderCheckboxes.filter(([key]) => pattern.test(key) && order.checks?.[key]).map(([key, label]) => format ? format(key, label) : label).join(' / ');
+  const fraction = value => { const parts = value.split('-'); return parts.length === 3 ? `${parts[0]} ${parts[1]}/${parts[2]}` : parts.join('/'); };
+  const width = selected(/^width-/, key => `${key.slice(6)} inch door`) || (text.doorCustomSize ? `Custom door: ${text.doorCustomSize}` : 'Door width : verify');
+  const height = selected(/^height-/, key => key === 'height-79' ? 'Standard height' : key === 'height-95' ? '95 inch door height' : `Custom height: ${text.doorCustomSize || 'verify'}`) || 'Height : verify';
+  const jamb = selected(/^jamb-/, key => `${fraction(key.slice(5).split('-x-')[0])} inch jamb`) || (text.jambCustom ? `Jamb: ${text.jambCustom}` : 'Jamb : verify');
+  const sill = build.sill;
+  const extension = build.extension;
+  const hingeFinish = selected(/^hinge-(?!lhh|rhh)/, (key, label) => `${label.replace(/ hinge$/, '')} hinges`) || 'Hinge colour : verify';
+  const handing = selected(/^hinge-(lhh|rhh)$/, key => key === 'hinge-lhh' ? 'Left-hand hinge' : 'Right-hand hinge') || 'Hinge side : verify';
+  const swing = selected(/^swing-/, key => key === 'swing-in' ? 'In swing' : 'Out swing') || 'Swing : verify';
+  const brickmould = Object.hasOwn(order.checks || {}, 'other-brickmould') ? (order.checks['other-brickmould'] ? 'Yes' : 'No') : 'Verify';
+  const material = selected(/^type-/, (key,label) => label) || 'Slab material: verify';
+  const bore = selected(/^bore-/, (key,label) => key === 'bore-double-2-18' ? 'Double bore - both 2 1/8 inch' : label) || 'Bore: verify';
+  const summary = [height, jamb, sill, extension];
+  sheet.innerHTML = `<header class="build-sheet-head"><div><small>WEST BUILT - FACTORY FLOOR</small><h2>Door build sheet</h2><strong>${escapeHtml(order.orderNumber || '')} - ${escapeHtml(order.title || 'Untitled order')}</strong></div><div>PO ${escapeHtml(text.poNumber || 'Not specified')}<br>Quote ${escapeHtml(order.sourceQuoteNumber || 'Not linked')}<br>Prepared ${new Date().toLocaleDateString('en-CA')}</div></header>
+    <div class="build-main"><figure><strong class="build-picture-width">${escapeHtml(width.replace(/ door$/, ''))}</strong><div id="buildPicture"></div><strong class="build-picture-handing">${escapeHtml(handing.replace(/ hinge$/, ''))} / ${escapeHtml(swing)}</strong><figcaption>Reference illustration</figcaption></figure><div class="build-key-specs">${summary.map((line,index) => `<div${index === 2 ? ' data-build-sill' : index === 3 ? ' data-build-extension' : ''}>${escapeHtml(line)}</div>`).join('')}</div></div>
+    <section class="build-spec build-cuts"><h3>Cut sizes</h3><table class="build-cut-table"><thead><tr><th>Component</th><th>Cut to</th><th>Checked</th></tr></thead><tbody>${[['Header','headerCutLength'],['Sill','sillCutLength'],['Sill extension','sillExtensionCutLength']].map(([label,key]) => `<tr><td>${label}</td><td${key === 'sillExtensionCutLength' ? ' data-build-extension-cut' : ''}>${escapeHtml(key === 'sillExtensionCutLength' ? build.cut : text[key] ? `${text[key]} inch` : 'Verify / enter size')}</td><td>[ ]</td></tr>`).join('')}</tbody></table></section>
+    <div class="build-spec-grid">
+    ${group('Door / size', /^(layout-|width-|height-|type-)/, ['doorCustomSize','slabPanel'])}
+    ${group('Handing / machining', /^(hinge-lhh|hinge-rhh|swing-|bore-|multipoint-|prep-|cutout-)/, ['doorCutoutSize'])}
+    ${group('Glass / sidelites', /^(sidelite-|direct-glaze-|transom-|doorlite)/, ['sideliteCustomSize','sideliteCutoutSize','directGlazeSize','doorliteName','doorliteSize','doorliteCaming','doorliteQuantity'])}
+    ${group('Frame / components', /^(jamb-|material-|other-)/, ['jambCustom'])}
+    ${group('Seals / sweeps', /^(weatherstrip-|corner-seal-|sweep-)/)}
+    ${group('Hinge finish', /^hinge-(?!lhh|rhh)/)}
+    <section class="build-spec"><h3>Finish</h3><p>Paint interior: ${escapeHtml(colour('paintInterior'))}<br>Paint exterior: ${escapeHtml(colour('paintExterior'))}<br>Stain interior: ${escapeHtml(text.stainInterior || 'Not specified')}<br>Stain exterior: ${escapeHtml(text.stainExterior || 'Not specified')}</p></section></div>
+    <section class="build-spec"><h3>Hardware / special instructions</h3><p class="build-notes">${escapeHtml(['extrasLine1','extrasLine2','extrasLine3','extrasLine4','extrasNotes'].map(key => text[key]).filter(Boolean).join('\n') || 'None entered')}</p></section>
+    <footer class="build-signoff">[ ] Materials &nbsp; [ ] Machining &nbsp; [ ] Assembly &nbsp; [ ] Finish &nbsp; [ ] Final QC<br>Built by: __________________ &nbsp; Checked by: __________________ &nbsp; Date: __________</footer>`;
+  const picture = document.getElementById('buildPicture');
+  const quote = readSavedQuotes().find(item => item.id === order.sourceQuoteId);
+  if (quote?.values && quote.itemType !== 'patio-door') {
+    const previousId = activeQuoteId;
+    const previousCustomer = activeQuoteCustomer;
+    const previous = captureQuoteState({id: previousId, quoteNumber: document.getElementById('quoteNumber').textContent});
+    try {
+      applySavedQuoteState(quote);
+      const drawing = cleanCloneIds(document.querySelector('#quoteFrontView .front-view').cloneNode(true));
+      makeCloneImagesPrintSafe(drawing);
+      picture.appendChild(drawing);
+    } finally {
+      applySavedQuoteState(previous);
+      activeQuoteId = previousId;
+      activeQuoteCustomer = previousCustomer;
+    }
+  } else picture.textContent = 'No linked door illustration. Attach approved shop drawing.';
+}
+
+document.getElementById('buildLink').addEventListener('click', event => { event.preventDefault(); openBuildPage(); });
+document.getElementById('openBuildBtn').addEventListener('click', () => openBuildPage(activeDoorOrderId));
+document.getElementById('buildOrderSelect').addEventListener('change', () => renderBuildSheet());
+document.getElementById('buildEditOrderBtn').addEventListener('click', () => openDoorOrder(document.getElementById('buildOrderSelect').value));
+document.getElementById('printBuildBtn').addEventListener('click', () => {
+  if (currentUsername !== 'chris' || document.getElementById('buildSheet').hidden) return;
+  document.querySelector('#buildPdfActions [data-prepare]').click();
+});
+BuildPdf.mount(document.getElementById('buildPdfActions'), document.getElementById('buildSheet'));
+window.addEventListener('afterprint', () => document.body.classList.remove('printing-build'));

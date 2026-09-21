@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>West Built Door Builder</title>
-    <link rel="stylesheet" href="styles.css?v=factory-v1" />
+    <link rel="stylesheet" href="styles.css?v=build-print-v3" />
   </head>
   <body>
     <section class="login-view" id="loginView" aria-label="Login">
@@ -468,6 +468,7 @@
         <label class="door-order-search"><span>Order</span><select id="buildOrderSelect"><option value="">Select an order</option></select></label>
         <div class="build-actions"><button type="button" id="buildEditOrderBtn" disabled>Edit order details</button><button type="button" id="printBuildBtn" disabled hidden>Prepare PDF</button></div>
         <p id="buildEmpty">Saved orders will appear here. Each sheet uses the current order details.</p>
+        <div id="buildReview" hidden></div>
         <div id="buildSettings" hidden></div>
         <div id="buildPdfActions" class="build-pdf-actions" hidden></div>
         <article id="buildSheet" class="build-sheet" hidden></article>
@@ -1435,8 +1436,10 @@
 
     <script src="supabase-config.js?v=unique-custom-color-v1"></script>
     <script src="assets/vendor/html2canvas.min.js"></script>
-    <script src="build-settings.js?v=factory-v1"></script>
-    <script src="build-pdf.js?v=factory-v1"></script>
-    <script src="app.js?v=factory-v1"></script>
+    <script src="build-settings.js?v=print-v3"></script>
+    <script src="build-print.js?v=print-v3"></script>
+    <script src="build-review.js?v=print-v3"></script>
+    <script src="build-pdf.js?v=print-v3"></script>
+    <script src="app.js?v=build-print-v3"></script>
   </body>
 </html>

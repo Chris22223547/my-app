@@ -21,14 +21,15 @@ window.BuildPdf = (() => {
     return lines;
   }
   async function picture(sheet) {
-    const source = sheet.querySelector('.front-view');
+    const source = sheet.querySelector('.build-slab-picture, .front-view');
     if (!source) return null;
     if (!window.html2canvas) throw Error('The door image renderer did not load. Refresh and try again.');
     const host = document.createElement('div');
-    host.style.cssText = 'position:fixed;left:-10000px;top:0;width:360px;height:430px;background:white;display:flex;align-items:center;justify-content:center;';
+    host.style.cssText = 'position:fixed;left:-10000px;top:0;width:260px;height:400px;background:white;display:flex;align-items:center;justify-content:center;';
     const clone = source.cloneNode(true);
     clone.querySelectorAll('img').forEach(img => { img.loading = 'eager'; });
-    clone.style.cssText += ';transform:scale(.8);transform-origin:center;flex-shrink:0;';
+    clone.style.cssText += source.matches('.build-slab-picture') ? ';width:260px;height:400px;display:flex;justify-content:center;align-items:center;' : ';transform:scale(.8);transform-origin:center;flex-shrink:0;';
+    if(source.matches('.build-slab-picture')) clone.querySelectorAll('img').forEach(img=>img.style.cssText='width:250px;height:390px;object-fit:contain;');
     host.appendChild(clone); document.body.appendChild(host);
     try {
       const images = [...clone.querySelectorAll('img[src]')].filter(img => img.getAttribute('src') && !img.hidden);
@@ -44,24 +45,39 @@ window.BuildPdf = (() => {
     const pages = [[]]; let page = pages[0]; let y = 34;
     const text = (value,x,top,size=10,bold=false) => page.push(`BT /${bold?'F2':'F1'} ${size} Tf 0 g 1 0 0 1 ${x} ${792-top} Tm (${literal(value)}) Tj ET\n`);
     const line = top => page.push(`0.75 G 0.4 w 28 ${792-top} m 584 ${792-top} l S\n`);
-    const reserve = height => { if(y+height>746){page=[];pages.push(page);text('WEST BUILT - BUILD DETAILS (continued)',28,34,12,true);y=54;} };
+    const reserve = height => { if(y+height>746){page=[];pages.push(page);text((sheet.dataset.buildReady==='true'?'CONFIRMED BUILD':'DRAFT - NEEDS REVIEW')+' (continued)',28,34,12,true);y=54;} };
     text('WEST BUILT - FACTORY BUILD SHEET',28,y,14,true); y+=20;
     const name = sheet.querySelector('.build-sheet-head strong')?.textContent || 'Door build';
     for(const row of wrap(name,556,11,true)){text(row,28,y,11,true);y+=14;}
     const meta = sheet.querySelector('.build-sheet-head > div:last-child')?.innerText || '';
     text(meta.replace(/\n/g,'   |   '),28,y,8); y+=12;line(y);y+=20;
+    const buildStatus=sheet.querySelector('.build-review-status')?.textContent || 'DRAFT - NEEDS REVIEW';
+    for(const row of wrap(buildStatus,556,9,true)){text(row,28,y,9,true);y+=12;}
+    y+=4;
     const top = y;
-    const widthLabel = sheet.querySelector('.build-picture-width')?.textContent || '';
-    text(widthLabel,44,top,14,true);
+    text('VIEWED FROM EXTERIOR',47,top,9,true);
+    if(image) pages[0].push(`q 180 0 0 250 35 ${792-top-255} cm /Im0 Do Q\n`);
+    else {text('No confirmed catalogue picture',32,top+80,9);text('Slab style requires confirmation',32,top+95,8);}
+    let specY=top;
     for(const item of sheet.querySelectorAll('.build-key-specs > div')) {
-      const size = 13;
-      for(const row of wrap(item.textContent,365,size,true)){reserve(size+7);text(row,216,y,size,true);y+=size+7;}
+      for(const row of wrap(item.textContent,322,11,true)){text(row,260,specY,11,true);specY+=14;}
+      specY+=5;
     }
-    if(image) pages[0].push(`q 135 0 0 161 28 ${792-top-173} cm /Im0 Do Q\n`);
-    else text('No linked door illustration',28,top+50,8);
-    let handY=top+185;
-    for(const row of wrap(sheet.querySelector('.build-picture-handing')?.textContent || '',174,10,true)){text(row,28,handY,10,true);handY+=12;}
-    y=Math.max(y,handY+5)+5;line(y);y+=17;
+    for(const row of wrap(sheet.querySelector('.build-picture-handing')?.textContent || '',322,11,true)){text(row,260,specY,11,true);specY+=14;}
+    const side=sheet.dataset.exteriorHingeSide;
+    const base=Math.max(specY+46,top+210);
+    if(side){
+      const left=360,right=390,hinge=side==='left'?left:right,free=side==='left'?right:left,dy=sheet.dataset.outswing==='true'?30:-30;
+      text('OVERHEAD SWING - NOT TO SCALE',280,base-45,8,true);
+      text('INTERIOR',349,base-33,7);text('EXTERIOR',349,base+34,7);
+      page.push(`0 G 2 w 290 ${792-base} m ${left} ${792-base} l S ${right} ${792-base} m 460 ${792-base} l S\n`);
+      page.push(`0.6 w [3 3] 0 d ${left} ${792-base} m ${right} ${792-base} l S [] 0 d\n`);
+      page.push(`2 w ${hinge} ${792-base} m ${hinge} ${792-base-dy} l S 0.6 w ${free} ${792-base} m ${free} ${792-base-dy} ${free} ${792-base-dy} ${hinge} ${792-base-dy} c S\n`);
+      text('Hinges '+side+' when viewed from exterior',280,base+47,8);
+    }else text('Swing diagram: exterior hinge position unconfirmed',260,base,8);
+    text('Slab style only; not to scale.',32,top+267,8);
+    text('See glass and machining details.',32,top+278,8);
+    y=Math.max(top+285,base+53);line(y);y+=15;
     reserve(86);text('CUT SIZES',28,y,10,true);y+=17;
     text('Component',28,y,9,true);text('Cut to',290,y,9,true);text('Checked',525,y,9,true);y+=9;line(y);y+=16;
     for(const row of sheet.querySelectorAll('.build-cut-table tbody tr')) {
@@ -72,12 +88,12 @@ window.BuildPdf = (() => {
     for(let index=0;index<sections.length;index+=2) {
       const pair=sections.slice(index,index+2).map(section=>({title:section.querySelector('h3')?.textContent || '',content:section.querySelector('p')?.innerText || ''}));
       const rows=pair.map(section=>wrap(section.content,266,8.5));
-      const height=28+Math.max(...rows.map(lines=>lines.length))*11;
+      const height=23+Math.max(...rows.map(lines=>lines.length))*10;
       if(height>680){
         for(const section of pair){reserve(30);line(y);y+=12;text(section.title.toUpperCase(),28,y,8.5,true);y+=12;for(const row of wrap(section.content,556,8.5)){reserve(11);text(row,28,y,8.5);y+=11;}y+=4;}
       }else{
         reserve(height);line(y);
-        pair.forEach((section,column)=>{const x=28+column*290;text(section.title.toUpperCase(),x,y+12,8.5,true);rows[column].forEach((row,i)=>text(row,x,y+24+i*11,8.5));});
+        pair.forEach((section,column)=>{const x=28+column*290;text(section.title.toUpperCase(),x,y+12,8.5,true);rows[column].forEach((row,i)=>text(row,x,y+22+i*10,8.5));});
         y+=height;
       }
     }
@@ -101,9 +117,12 @@ window.BuildPdf = (() => {
     container.innerHTML='<button type="button" data-prepare>Prepare PDF</button><span role="status" aria-live="polite"></span><div class="build-pdf-ready" hidden><a data-open target="_blank" rel="noopener">Open / Print PDF</a><a data-save>Save PDF</a><button type="button" data-share>Email / Share PDF</button></div>';
     const button=container.querySelector('[data-prepare]'),status=container.querySelector('[role=status]'),ready=container.querySelector('.build-pdf-ready');let current=null,url=null,revision=0;
     const invalidate=()=>{revision++;current=null;ready.hidden=true;status.textContent='';if(url){URL.revokeObjectURL(url);url=null;}};
+    document.getElementById('buildSettings')?.addEventListener('input',invalidate);
+    document.getElementById('buildReview')?.addEventListener('input',invalidate);
     new MutationObserver(invalidate).observe(sheet,{childList:true,subtree:true,characterData:true});
     button.addEventListener('click',async()=>{
       if(sheet.hidden || !sheet.textContent.trim()){status.textContent='Choose an order first.';return;}
+      if(document.querySelector('.build-review-form')?.dataset.dirty==='true'){status.textContent='Confirm your edited build details before preparing the PDF.';return;}
       if(document.querySelector('.build-settings-form')?.dataset.dirty==='true'){status.textContent='Save your build requirements first, then prepare the PDF.';return;}
       button.disabled=true;status.textContent='Preparing a small, print-ready PDF...';const started=revision;
       try{const result=await create(sheet);if(started!==revision)throw Error('The sheet changed. Prepare the PDF again.');if(url)URL.revokeObjectURL(url);current=result;url=URL.createObjectURL(result.blob);const open=container.querySelector('[data-open]'),save=container.querySelector('[data-save]');open.href=url;save.href=url;save.download=result.name;ready.hidden=false;status.textContent=`Ready - ${result.pages} page${result.pages===1?'':'s'}, ${Math.ceil(result.blob.size/1024)} KB. Open to print, or save/email the PDF.`;}

@@ -55,5 +55,9 @@ window.BuildSettings = (() => {
     });
     update();
   }
-  return { mount, description };
+  function isComplete(s = {}) {
+    return (sills.includes(s.sillSize) || s.sillSize === 'custom' && validSize(s.sillCustom || '')) &&
+      (s.extensionSize === 'none' || ((s.extensionSize === 'custom' && validSize(s.extensionCustom || '')) || standard.some(n=>s.extensionSize==='standard:'+n) || canAm.some(n=>s.extensionSize==='can-am:'+n)) && validSize(s.extensionCutLength || ''));
+  }
+  return { mount, description, validSize, isComplete };
 })();

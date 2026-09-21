@@ -2113,6 +2113,7 @@ async function copyDoorOrder(orderId) {
   const title = source.title ? `${source.title} - Copy` : "Copied order";
   const copy = {
     ...source,
+    buildSnapshot: undefined,
     id: crypto.randomUUID ? crypto.randomUUID() : `door-order-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     orderNumber: generateDoorOrderNumber(),
     title,
@@ -4844,9 +4845,34 @@ function openBuildPage(orderId = '') {
   renderBuildSheet();
 }
 
+const buildCheckboxes = [...doorOrderCheckboxes,
+  ['layout-double','Double door layout'],['layout-double-right-sidelite','Double door with right sidelite'],
+  ['width-custom','Custom slab width'],['jamb-custom','Custom jamb depth']];
+
+function buildQuoteReference(quote) {
+  if (quote.itemType === 'patio-door') return {checks:{},text:{}};
+  const reference=doorOrderPrefillFromQuote(quote),v=quote.values || {};
+  for(const [prefix,known] of [['type-',!!v.grainFilter],['hinge-l',!!v.handing],['hinge-r',!!v.handing],['swing-',!!v.swingType],['material-',!!v.frameOption]]) {
+    if(!known) for(const key of Object.keys(reference.checks)) if(key.startsWith(prefix)) delete reference.checks[key];
+  }
+  // Purchase-sheet convenience defaults are not evidence of a build requirement.
+  delete reference.checks['sill-colour-black'];delete reference.checks['sweep-black'];
+  if(v.systemType==='double') reference.checks['layout-double']=true;
+  if(v.systemType==='double-right-sidelite') reference.checks['layout-double-right-sidelite']=true;
+  if(v.frameWidth && !['28','30','32','34','36','42'].includes(v.frameWidth)) reference.checks['width-custom']=true;
+  if(v.frameHeight==='97.875') for(const depth of ['4-5-8','6-5-8']) { const key='jamb-'+depth+'-x-84';if(reference.checks[key]) {delete reference.checks[key];reference.checks['jamb-'+depth+'-x-101']=true;} }
+  if(!Object.hasOwn(v,'doorLite')) {delete reference.checks['cutout-no'];delete reference.checks['cutout-yes'];}
+  if(Object.hasOwn(v,'brickmould')) reference.checks['other-brickmould']=!!v.brickmould;
+  if(v.exteriorFinishType===steelFinishValue) reference.text.paintExterior='Polytex White';
+  if(v.interiorFinishType===steelFinishValue) reference.text.paintInterior='Polytex White';
+  return reference;
+}
+
 function renderBuildSheet(preserveSettings = false) {
   if (currentUsername !== 'chris') return;
-  const order = readSavedDoorOrders().find(item => item.id === document.getElementById('buildOrderSelect').value);
+  const sourceOrder = readSavedDoorOrders().find(item => item.id === document.getElementById('buildOrderSelect').value);
+  const quote = readSavedQuotes().find(item => item.id === sourceOrder?.sourceQuoteId);
+  const order = sourceOrder?.buildSnapshot ? {...sourceOrder, checks:sourceOrder.buildSnapshot.checks, text:sourceOrder.buildSnapshot.text} : sourceOrder;
   const sheet = document.getElementById('buildSheet');
   sheet.hidden = !order;
   document.getElementById('buildPdfActions').hidden = !order;
@@ -4856,7 +4882,25 @@ function renderBuildSheet(preserveSettings = false) {
   sheet.replaceChildren();
   const settingsPanel = document.getElementById('buildSettings');
   settingsPanel.hidden = !order;
-  if (!order) return;
+  const reviewPanel = document.getElementById('buildReview');
+  reviewPanel.hidden = !order;
+  if (!order) { reviewPanel.replaceChildren(); return; }
+  const catalog = [...document.querySelectorAll('.panel-card')].map(card => ({id:card.dataset.panel,label:card.dataset.name,type:card.dataset.panelType,image:panelArt[card.dataset.panel]}));
+  if (!preserveSettings) BuildReview.mount(reviewPanel, {order:sourceOrder,quote,catalog,checkboxes:buildCheckboxes,textFields:doorOrderTextFields,quoteOrder:quote ? buildQuoteReference(quote) : null,save:async snapshot => {
+    if (currentUsername !== 'chris') throw Error('Order access is required.');
+    if (document.querySelector('.build-settings-form')?.dataset.dirty === 'true') throw Error('Save the sill requirements first, then confirm the build.');
+    const current = readSavedDoorOrders().find(item => item.id === sourceOrder.id);
+    const currentQuote = readSavedQuotes().find(item => item.id === current?.sourceQuoteId);
+    if (!current || BuildReview.fingerprint(current,currentQuote)!==snapshot.sourceFingerprint) throw Error('The source changed. Reopen this build and review again.');
+    snapshot.extensionCheck = snapshot.text.extensionAssemblyNote ? JSON.stringify(current.buildRequirements || {}) : '';
+    const updated={...current,buildSnapshot:snapshot,updatedAt:new Date().toISOString()};
+    writeSavedDoorOrders(readSavedDoorOrders().map(item=>item.id===updated.id?updated:item));
+    renderBuildSheet();
+    const report = message => { if(document.getElementById('buildOrderSelect').value===updated.id) document.querySelector('.build-review-form [role=status]').textContent=message; return message; };
+    if (!sharedStorageEnabled()) return report('Confirmed on this browser only.');
+    try { await sharedStorageRequest('door_orders?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify(doorOrderToDatabaseRow(updated))}); return report('Build confirmed and synced.'); }
+    catch(error) { return report('Confirmed on this browser only. Sync failed; confirm again to retry.'); }
+  }});
   if (!preserveSettings) BuildSettings.mount(settingsPanel, order.buildRequirements, async requirements => {
     if (currentUsername !== 'chris') throw Error('Order access is required.');
     const current = readSavedDoorOrders().find(item => item.id === order.id);
@@ -4873,16 +4917,17 @@ function renderBuildSheet(preserveSettings = false) {
   const text = order.text || {};
   const build = BuildSettings.description(order.buildRequirements);
   const group = (title, pattern, fields = []) => {
-    const selections = doorOrderCheckboxes.filter(([key]) => pattern.test(key) && order.checks?.[key]).map(([,label]) => escapeHtml(label));
+    const selections = buildCheckboxes.filter(([key]) => pattern.test(key) && order.checks?.[key]).map(([,label]) => escapeHtml(label));
     fields.forEach(key => { if (text[key]) selections.push(`<b>${escapeHtml(doorOrderTextFields.find(([field]) => field === key)?.[1] || key)}:</b> ${escapeHtml(text[key])}`); });
+    if(title==='Frame / components') selections.push('Brick mould: '+(Object.hasOwn(order.checks || {},'other-brickmould') ? order.checks['other-brickmould'] ? 'Yes' : 'No' : 'Verify'));
     return `<section class="build-spec"><h3>${title}</h3><p>${selections.join(' - ') || 'Not specified : verify'}</p></section>`;
   };
   const colour = key => text[key] === 'custom' ? text[key + 'Custom'] || 'Custom : not specified' : paintColors.find(([value]) => value === text[key])?.[1] || text[key] || 'Not specified';
-  const selected = (pattern, format) => doorOrderCheckboxes.filter(([key]) => pattern.test(key) && order.checks?.[key]).map(([key, label]) => format ? format(key, label) : label).join(' / ');
+  const selected = (pattern, format) => buildCheckboxes.filter(([key]) => pattern.test(key) && order.checks?.[key]).map(([key, label]) => format ? format(key, label) : label).join(' / ');
   const fraction = value => { const parts = value.split('-'); return parts.length === 3 ? `${parts[0]} ${parts[1]}/${parts[2]}` : parts.join('/'); };
-  const width = selected(/^width-/, key => `${key.slice(6)} inch door`) || (text.doorCustomSize ? `Custom door: ${text.doorCustomSize}` : 'Door width : verify');
+  const width = selected(/^width-/, key => key === 'width-custom' ? `Custom door: ${text.doorCustomSize || 'verify'}` : `${key.slice(6)} inch door`) || (text.doorCustomSize ? `Custom door: ${text.doorCustomSize}` : 'Door width : verify');
   const height = selected(/^height-/, key => key === 'height-79' ? 'Standard height' : key === 'height-95' ? '95 inch door height' : `Custom height: ${text.doorCustomSize || 'verify'}`) || 'Height : verify';
-  const jamb = selected(/^jamb-/, key => `${fraction(key.slice(5).split('-x-')[0])} inch jamb`) || (text.jambCustom ? `Jamb: ${text.jambCustom}` : 'Jamb : verify');
+  const jamb = selected(/^jamb-/, key => key === 'jamb-custom' ? `${text.jambCustom || 'Verify'} inch jamb` : `${fraction(key.slice(5).split('-x-')[0])} inch jamb`) || (text.jambCustom ? `Jamb: ${text.jambCustom}` : 'Jamb : verify');
   const sill = build.sill;
   const extension = build.extension;
   const hingeFinish = selected(/^hinge-(?!lhh|rhh)/, (key, label) => `${label.replace(/ hinge$/, '')} hinges`) || 'Hinge colour : verify';
@@ -4902,26 +4947,27 @@ function renderBuildSheet(preserveSettings = false) {
     ${group('Frame / components', /^(jamb-|material-|other-)/, ['jambCustom'])}
     ${group('Seals / sweeps', /^(weatherstrip-|corner-seal-|sweep-)/)}
     ${group('Hinge finish', /^hinge-(?!lhh|rhh)/)}
-    <section class="build-spec"><h3>Finish</h3><p>Paint interior: ${escapeHtml(colour('paintInterior'))}<br>Paint exterior: ${escapeHtml(colour('paintExterior'))}<br>Stain interior: ${escapeHtml(text.stainInterior || 'Not specified')}<br>Stain exterior: ${escapeHtml(text.stainExterior || 'Not specified')}</p></section></div>
+    <section class="build-spec"><h3>Finish</h3><p>${sourceOrder.buildSnapshot ? `Interior: ${escapeHtml(text.buildInteriorFinish || 'Verify')}<br>Exterior: ${escapeHtml(text.buildExteriorFinish || 'Verify')}` : `Paint interior: ${escapeHtml(colour('paintInterior'))}<br>Paint exterior: ${escapeHtml(colour('paintExterior'))}<br>Stain interior: ${escapeHtml(text.stainInterior || 'Not specified')}<br>Stain exterior: ${escapeHtml(text.stainExterior || 'Not specified')}`}</p></section></div>
     <section class="build-spec"><h3>Hardware / special instructions</h3><p class="build-notes">${escapeHtml(['extrasLine1','extrasLine2','extrasLine3','extrasLine4','extrasNotes'].map(key => text[key]).filter(Boolean).join('\n') || 'None entered')}</p></section>
     <footer class="build-signoff">[ ] Materials &nbsp; [ ] Machining &nbsp; [ ] Assembly &nbsp; [ ] Finish &nbsp; [ ] Final QC<br>Built by: __________________ &nbsp; Checked by: __________________ &nbsp; Date: __________</footer>`;
+  const snapshot = sourceOrder.buildSnapshot;
+  const stale = snapshot && snapshot.sourceFingerprint !== BuildReview.fingerprint(sourceOrder,quote);
+  const completeSill = BuildSettings.isComplete(sourceOrder.buildRequirements);
+  const ready = snapshot && !stale && completeSill;
+  sheet.dataset.buildReady = ready ? 'true' : 'false';
+  const banner = document.createElement('p');
+  banner.className = 'build-review-status';
+  banner.textContent = !snapshot ? 'DRAFT - NEEDS REVIEW: Confirm the build details before production.' : stale ? 'DRAFT - NEEDS REVIEW: Order or quote changed after confirmation.' : !completeSill ? 'DRAFT - NEEDS REVIEW: Save the sill and extension requirements.' : 'CONFIRMED BUILD - '+new Date(snapshot.confirmedAt).toLocaleDateString('en-CA');
+  sheet.querySelector('.build-sheet-head').after(banner);
   const picture = document.getElementById('buildPicture');
-  const quote = readSavedQuotes().find(item => item.id === order.sourceQuoteId);
-  if (quote?.values && quote.itemType !== 'patio-door') {
-    const previousId = activeQuoteId;
-    const previousCustomer = activeQuoteCustomer;
-    const previous = captureQuoteState({id: previousId, quoteNumber: document.getElementById('quoteNumber').textContent});
-    try {
-      applySavedQuoteState(quote);
-      const drawing = cleanCloneIds(document.querySelector('#quoteFrontView .front-view').cloneNode(true));
-      makeCloneImagesPrintSafe(drawing);
-      picture.appendChild(drawing);
-    } finally {
-      applySavedQuoteState(previous);
-      activeQuoteId = previousId;
-      activeQuoteCustomer = previousCustomer;
-    }
-  } else picture.textContent = 'No linked door illustration. Attach approved shop drawing.';
+  if (snapshot?.panel?.image) {
+    const holder=document.createElement('div');holder.className='build-slab-picture';
+    const image=document.createElement('img');image.src=snapshot.panel.image;image.alt=snapshot.panel.label;holder.appendChild(image);picture.appendChild(holder);
+    sheet.querySelector('figcaption').textContent='Confirmed slab style only. Glass and machining: see details.';
+  } else { picture.textContent='No confirmed catalogue picture'; }
+  const slabLine=document.createElement('div');slabLine.textContent=snapshot?.text?.slabPanel || text.slabPanel || 'Slab style: confirm';sheet.querySelector('.build-key-specs').prepend(slabLine);
+  BuildPrint.enhance(sheet,order);
+
 }
 
 document.getElementById('buildLink').addEventListener('click', event => { event.preventDefault(); openBuildPage(); });

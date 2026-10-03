@@ -4378,7 +4378,7 @@ async function createRedSheetPdf(title = "") {
   ];
   const pages = [];
   for (const pageElement of pageElements) {
-    const renderedPage = await renderElementToJpegDataUrl(pageElement);
+    const renderedPage = await renderRedSheetPageForPdf(pageElement);
     pages.push({
       jpegBytes: jpegDataUrlToBytes(renderedPage.dataUrl),
       imageWidth: renderedPage.width,
@@ -4387,6 +4387,66 @@ async function createRedSheetPdf(title = "") {
   }
   return createPdfFromJpegPages(pages, { title });
 }
+
+async function renderRedSheetPageForPdf(element) {
+  await waitForPrintImages(element);
+  const frame = document.createElement("iframe");
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.cssText = "position:fixed;left:-10000px;top:0;width:1100px;height:1600px;border:0;pointer-events:none";
+  document.body.append(frame);
+  try {
+    const doc = frame.contentDocument;
+    doc.open();
+    doc.write('<!doctype html><html><head><base href="' + escapeHtml(document.baseURI) + '"></head><body></body></html>');
+    doc.close();
+    for (const sheet of document.styleSheets) {
+      const style = doc.createElement("style");
+      style.textContent = Array.from(sheet.cssRules, rule => rule.cssText).join("\n");
+      doc.head.append(style);
+    }
+    const clone = element.cloneNode(true);
+    clone.querySelectorAll("img").forEach((img, index) => {
+      img.src = element.querySelectorAll("img")[index].src;
+      img.loading = "eager";
+    });
+    doc.body.style.cssText = "margin:0;background:white";
+    doc.body.append(clone);
+    await waitForPrintImages(clone);
+    await doc.fonts.ready;
+    const bounds = clone.getBoundingClientRect();
+    const scale = Math.min(1.5, Math.sqrt(2000000 / (bounds.width * bounds.height)));
+    const canvas = await window.html2canvas(clone, {
+      backgroundColor: "#fff", scale, useCORS: true, logging: false,
+      removeContainer: true, windowWidth: 1100, windowHeight: 1600, scrollX: 0, scrollY: 0,
+    });
+    try {
+      return { dataUrl: canvas.toDataURL("image/jpeg", 0.9), width: canvas.width, height: canvas.height };
+    } finally {
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+  } finally {
+    frame.remove();
+  }
+}
+
+const redSheetPdfPanel = document.createElement("div");
+redSheetPdfPanel.className = "red-sheet-pdf-actions";
+redSheetPdfPanel.hidden = true;
+redSheetPdfPanel.innerHTML = '<span role="status" aria-live="polite"></span><a class="red-sheet-pdf-open" target="_blank" rel="noopener" hidden>Open / Print PDF</a><a class="red-sheet-pdf-save" hidden>Save PDF</a>';
+document.querySelector(".red-sheet-actions").after(redSheetPdfPanel);
+let preparedRedSheetPdfUrl = "";
+let redSheetPdfRevision = 0;
+function clearPreparedRedSheetPdf() {
+  redSheetPdfRevision += 1;
+  if (preparedRedSheetPdfUrl) URL.revokeObjectURL(preparedRedSheetPdfUrl);
+  preparedRedSheetPdfUrl = "";
+  redSheetPdfPanel.hidden = true;
+  redSheetPdfPanel.querySelectorAll("a").forEach(link => { link.hidden = true; link.removeAttribute("href"); });
+}
+const redSheetPdfObserver = new MutationObserver(clearPreparedRedSheetPdf);
+redSheetPdfObserver.observe(document.getElementById("redSheet"), { subtree: true, childList: true, characterData: true, attributes: true });
+redSheetPdfObserver.observe(document.getElementById("redSheetQuotePages"), { subtree: true, childList: true, characterData: true, attributes: true });
 
 function shouldNameRedSheetPdf() {
   return /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
@@ -4404,34 +4464,38 @@ document.getElementById("printRedSheetBtn").addEventListener("click", async () =
     pdfName = safeFileName(requestedPdfName).replace(/\.pdf$/i, "") || defaultPdfName;
   }
 
-  const previewWindow = window.open("", "_blank");
-  if (!previewWindow) {
-    alert("Your browser blocked the PDF preview. Please allow pop-ups for this site and try again.");
-    return;
-  }
-  previewWindow.document.write(`<!doctype html><title>Preparing Red Sheet PDF</title>
-    <body style="margin:0;display:grid;place-items:center;height:100vh;font:600 18px Arial;color:#17456f">
-      Preparing the Red Sheet PDF...
-    </body>`);
-  previewWindow.document.close();
-
+  clearPreparedRedSheetPdf();
+  const status = redSheetPdfPanel.querySelector("[role=status]");
+  redSheetPdfPanel.hidden = false;
+  status.textContent = "Preparing the complete PDF…";
   const button = document.getElementById("printRedSheetBtn");
   button.disabled = true;
   button.textContent = "Preparing...";
   try {
     window.clearTimeout(redSheetSaveTimer);
     await saveActiveRedSheet();
+    await Promise.resolve();
+    const revision = redSheetPdfRevision;
     // Always generate complete letter-size pages. Native mobile HTML printing
     // can clip the fixed-size form to the phone's scroll surface.
     const pdfBlob = await createRedSheetPdf(pdfName);
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    previewWindow.location.replace(pdfUrl);
-    window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 600000);
+    if (revision !== redSheetPdfRevision) {
+      redSheetPdfPanel.hidden = false;
+      status.textContent = "The sheet changed. Tap Print Red Sheet again to prepare the updated PDF.";
+      return;
+    }
+    preparedRedSheetPdfUrl = URL.createObjectURL(pdfBlob);
+    redSheetPdfPanel.hidden = false;
+    redSheetPdfPanel.querySelectorAll("a").forEach(link => { link.href = preparedRedSheetPdfUrl; link.hidden = false; });
+    redSheetPdfPanel.querySelector(".red-sheet-pdf-save").download = `${pdfName}.pdf`;
+    status.textContent = "PDF ready. Tap Open / Print PDF, then use your phone’s Share button to print or save.";
+    document.getElementById("redSheetPage").scrollLeft = 0;
+    redSheetPdfPanel.scrollIntoView({ block: "nearest", inline: "nearest" });
   } catch (error) {
-    previewWindow.close();
     document.body.dataset.redSheetPrintError = error?.message || "Unknown error";
     console.error("Red Sheet PDF preparation failed", error);
-    alert(`The Red Sheet PDF could not be prepared: ${error?.message || "Unknown error"}`);
+    redSheetPdfPanel.hidden = false;
+    status.textContent = `The PDF could not be prepared. Please try again. ${error?.message || ""}`;
   } finally {
     button.disabled = false;
     button.textContent = "Print Red Sheet";

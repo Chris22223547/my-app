@@ -1283,6 +1283,12 @@ button {
   overflow: auto;
 }
 
+.red-sheet-pdf-actions { width: 8.5in; max-width: 100%; margin: 0 auto 12px; display: flex; flex-wrap: wrap; gap: 10px; }
+.red-sheet-pdf-actions[hidden], .red-sheet-pdf-actions a[hidden] { display: none; }
+.red-sheet-pdf-actions span { width: 100%; }
+.red-sheet-pdf-actions a { background: #17456f; color: white; padding: 12px 18px; text-decoration: none; font-weight: 700; }
+@media print { .red-sheet-pdf-actions { display: none; } }
+
 .red-sheet-actions {
   display: flex;
   align-items: center;

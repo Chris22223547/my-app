@@ -4371,7 +4371,7 @@ async function waitForPrintImages(root) {
   );
 }
 
-async function createRedSheetPdf() {
+async function createRedSheetPdf(title = "") {
   const pageElements = [
     document.getElementById("redSheet"),
     ...document.querySelectorAll("#redSheetQuotePages .quote-sheet"),
@@ -4385,34 +4385,28 @@ async function createRedSheetPdf() {
       imageHeight: renderedPage.height,
     });
   }
-  return createPdfFromJpegPages(pages);
+  return createPdfFromJpegPages(pages, { title });
 }
 
-function shouldPrintRedSheetDirectly() {
+function shouldNameRedSheetPdf() {
   return /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
 document.getElementById("printRedSheetBtn").addEventListener("click", async () => {
-  if (shouldPrintRedSheetDirectly()) {
-    const redSheetNumber = document.getElementById("activeRedSheetNumber").textContent.trim() || "Red Sheet";
-    const customerName = document.getElementById("redCustomerName").textContent.trim();
-    const defaultPdfName = safeFileName([redSheetNumber, customerName].filter(Boolean).join(" - "));
-    const requestedPdfName = window.prompt("Name this PDF before printing:", defaultPdfName);
+  const redSheetNumber = document.getElementById("activeRedSheetNumber").textContent.trim() || "Red Sheet";
+  const customerName = document.getElementById("redCustomerName").textContent.trim();
+  const defaultPdfName = safeFileName([redSheetNumber, customerName].filter(Boolean).join(" - "));
+  let pdfName = defaultPdfName;
+  if (shouldNameRedSheetPdf()) {
+    const requestedPdfName = window.prompt("Name this PDF before printing:", pdfName);
     if (requestedPdfName === null) return;
-
-    window.clearTimeout(redSheetSaveTimer);
-    saveActiveRedSheet().catch((error) => console.error("Red Sheet save failed before printing", error));
-    previousPrintTitle = document.title;
-    document.title = safeFileName(requestedPdfName).replace(/\.pdf$/i, "") || defaultPdfName;
-    document.body.classList.add("printing-red-sheet", "printing-red-sheet-ios");
-    window.print();
-    return;
+    pdfName = safeFileName(requestedPdfName).replace(/\.pdf$/i, "") || defaultPdfName;
   }
 
   const previewWindow = window.open("", "_blank");
   if (!previewWindow) {
-    alert("Chrome blocked the print preview. Please allow pop-ups for this site and try again.");
+    alert("Your browser blocked the PDF preview. Please allow pop-ups for this site and try again.");
     return;
   }
   previewWindow.document.write(`<!doctype html><title>Preparing Red Sheet PDF</title>
@@ -4427,7 +4421,9 @@ document.getElementById("printRedSheetBtn").addEventListener("click", async () =
   try {
     window.clearTimeout(redSheetSaveTimer);
     await saveActiveRedSheet();
-    const pdfBlob = await createRedSheetPdf();
+    // Always generate complete letter-size pages. Native mobile HTML printing
+    // can clip the fixed-size form to the phone's scroll surface.
+    const pdfBlob = await createRedSheetPdf(pdfName);
     const pdfUrl = URL.createObjectURL(pdfBlob);
     previewWindow.location.replace(pdfUrl);
     window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 600000);
@@ -4647,7 +4643,7 @@ function createPdfFromJpeg(jpegBytes, imageWidth, imageHeight) {
   return new Blob([concatBytes([header, ...objects, pdfText(xref)])], { type: "application/pdf" });
 }
 
-function createPdfFromJpegPages(pages) {
+function createPdfFromJpegPages(pages, { title = "" } = {}) {
   const pageWidth = 612;
   const pageHeight = 792;
   const margin = 24;
@@ -4682,6 +4678,13 @@ function createPdfFromJpegPages(pages) {
     );
   });
 
+  let infoReference = "";
+  if (title) {
+    const infoObject = objects.length + 1;
+    const encodedTitle = "FEFF" + title.split("").map(character => character.charCodeAt(0).toString(16).padStart(4, "0")).join("");
+    objects.push(pdfText(`${infoObject} 0 obj\n<< /Title <${encodedTitle}> >>\nendobj\n`));
+    infoReference = ` /Info ${infoObject} 0 R`;
+  }
   const header = pdfText("%PDF-1.4\n");
   const offsets = [0];
   let position = header.length;
@@ -4695,7 +4698,7 @@ function createPdfFromJpegPages(pages) {
     `xref\n0 ${objectCount}\n0000000000 65535 f \n${offsets
       .slice(1)
       .map((offset) => `${String(offset).padStart(10, "0")} 00000 n `)
-      .join("\n")}\ntrailer\n<< /Size ${objectCount} /Root 1 0 R >>\nstartxref\n${xrefPosition}\n%%EOF`;
+      .join("\n")}\ntrailer\n<< /Size ${objectCount} /Root 1 0 R${infoReference} >>\nstartxref\n${xrefPosition}\n%%EOF`;
 
   return new Blob([concatBytes([header, ...objects, pdfText(xref)])], { type: "application/pdf" });
 }
@@ -4822,7 +4825,6 @@ document.getElementById("savePdfNoPricingBtn").addEventListener("click", async (
 window.addEventListener("afterprint", () => {
   document.body.classList.remove("print-no-pricing");
   document.body.classList.remove("printing-red-sheet");
-  document.body.classList.remove("printing-red-sheet-ios");
   document.body.classList.remove("printing-door-order");
   if (previousPrintTitle) {
     document.title = previousPrintTitle;

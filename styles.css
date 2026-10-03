@@ -3561,25 +3561,6 @@ body.exporting-door-order .door-order-colour-print {
     page-break-before: always;
   }
 
-  body.printing-red-sheet-ios .red-sheet {
-    zoom: 0.78 !important;
-    margin-bottom: -2.42in;
-  }
-
-  body.printing-red-sheet-ios .red-sheet-quote-pages .quote-sheet {
-    zoom: 1 !important;
-    transform: scale(0.74);
-    transform-origin: top center;
-  }
-
-  body.printing-red-sheet-ios .red-sheet-quote-page-shell {
-    height: 8.14in;
-    break-before: page;
-    page-break-before: always;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
   body:not(.printing-red-sheet) .red-sheet-page {
     display: none !important;
   }

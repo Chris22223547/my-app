@@ -40,18 +40,18 @@ window.BuildPdf = (() => {
       return {bytes,width:canvas.width,height:canvas.height};
     } finally { host.remove(); }
   }
-  async function create(sheet) {
+  async function create(sheet, options = {}) {
     const image = await picture(sheet);
     const pages = [[]]; let page = pages[0]; let y = 34;
     const text = (value,x,top,size=10,bold=false) => page.push(`BT /${bold?'F2':'F1'} ${size} Tf 0 g 1 0 0 1 ${x} ${792-top} Tm (${literal(value)}) Tj ET\n`);
     const line = top => page.push(`0.75 G 0.4 w 28 ${792-top} m 584 ${792-top} l S\n`);
-    const reserve = height => { if(y+height>746){page=[];pages.push(page);text((sheet.dataset.buildReady==='true'?'CONFIRMED BUILD':'DRAFT - NEEDS REVIEW')+' (continued)',28,34,12,true);y=54;} };
+    const reserve = height => { if(y+height>746){page=[];pages.push(page);text((sheet.dataset.buildReady==='true' && !options.draftNote?'CONFIRMED BUILD':'DRAFT - NEEDS REVIEW')+' (continued)',28,34,12,true);y=54;} };
     text('WEST BUILT - FACTORY BUILD SHEET',28,y,14,true); y+=20;
     const name = sheet.querySelector('.build-sheet-head strong')?.textContent || 'Door build';
     for(const row of wrap(name,556,11,true)){text(row,28,y,11,true);y+=14;}
     const meta = sheet.querySelector('.build-sheet-head > div:last-child')?.innerText || '';
     text(meta.replace(/\n/g,'   |   '),28,y,8); y+=12;line(y);y+=20;
-    const buildStatus=sheet.querySelector('.build-review-status')?.textContent || 'DRAFT - NEEDS REVIEW';
+    const buildStatus=options.draftNote || sheet.querySelector('.build-review-status')?.textContent || 'DRAFT - NEEDS REVIEW';
     for(const row of wrap(buildStatus,556,9,true)){text(row,28,y,9,true);y+=12;}
     y+=4;
     const top = y;
@@ -111,7 +111,7 @@ window.BuildPdf = (() => {
     const parts=[enc('%PDF-1.4\n')],offsets=[0];let position=parts[0].length;
     objects.forEach((body,i)=>{const header=enc(`${i+1} 0 obj\n`),tail=enc('\nendobj\n');offsets.push(position);parts.push(header,body,tail);position+=header.length+(body.size??body.length)+tail.length;});
     parts.push(enc(`xref\n0 ${objects.length+1}\n0000000000 65535 f \n${offsets.slice(1).map(n=>String(n).padStart(10,'0')+' 00000 n \n').join('')}trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${position}\n%%EOF`));
-    return {blob:new Blob(parts,{type:'application/pdf'}),name:ascii(`Build - ${name}`).replace(/[<>:"/\\|?*]/g,'-').trim()+'.pdf',pages:pages.length};
+    return {blob:new Blob(parts,{type:'application/pdf'}),name:ascii(`${options.draftNote ? 'DRAFT - ' : ''}Build - ${name}`).replace(/[<>:"/\\|?*]/g,'-').trim()+'.pdf',pages:pages.length};
   }
   function mount(container,sheet) {
     container.innerHTML='<button type="button" data-prepare>Prepare PDF</button><span role="status" aria-live="polite"></span><div class="build-pdf-ready" hidden><a data-open target="_blank" rel="noopener">Open / Print PDF</a><a data-save>Save PDF</a><button type="button" data-share>Email / Share PDF</button></div>';
@@ -122,10 +122,10 @@ window.BuildPdf = (() => {
     new MutationObserver(invalidate).observe(sheet,{childList:true,subtree:true,characterData:true});
     button.addEventListener('click',async()=>{
       if(sheet.hidden || !sheet.textContent.trim()){status.textContent='Choose an order first.';return;}
-      if(document.querySelector('.build-review-form')?.dataset.dirty==='true'){status.textContent='Confirm your edited build details before preparing the PDF.';return;}
-      if(document.querySelector('.build-settings-form')?.dataset.dirty==='true'){status.textContent='Save your build requirements first, then prepare the PDF.';return;}
+      const unsaved = ['.build-review-form','.build-settings-form'].some(selector=>document.querySelector(selector)?.dataset.dirty==='true');
+      const draftNote = unsaved ? 'DRAFT - DO NOT BUILD. Unsaved edits are NOT included. This copy uses the last saved details.' : '';
       button.disabled=true;status.textContent='Preparing a small, print-ready PDF...';const started=revision;
-      try{const result=await create(sheet);if(started!==revision)throw Error('The sheet changed. Prepare the PDF again.');if(url)URL.revokeObjectURL(url);current=result;url=URL.createObjectURL(result.blob);const open=container.querySelector('[data-open]'),save=container.querySelector('[data-save]');open.href=url;save.href=url;save.download=result.name;ready.hidden=false;status.textContent=`Ready - ${result.pages} page${result.pages===1?'':'s'}, ${Math.ceil(result.blob.size/1024)} KB. Open to print, or save/email the PDF.`;}
+      try{const result=await create(sheet,{draftNote});if(started!==revision)throw Error('The sheet changed. Prepare the PDF again.');if(url)URL.revokeObjectURL(url);current=result;url=URL.createObjectURL(result.blob);const open=container.querySelector('[data-open]'),save=container.querySelector('[data-save]');open.href=url;save.href=url;save.download=result.name;ready.hidden=false;status.textContent=`${unsaved ? 'DRAFT: unsaved edits are not included. ' : ''}Ready - ${result.pages} page${result.pages===1?'':'s'}, ${Math.ceil(result.blob.size/1024)} KB. Open to print, or save/email the PDF.`;}
       catch(error){status.textContent=`PDF not prepared: ${error.message}`;}finally{button.disabled=false;}
     });
     container.querySelector('[data-share]').addEventListener('click',async()=>{

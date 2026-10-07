@@ -3820,3 +3820,6 @@ body.exporting-door-order .door-order-colour-print {
 .build-swing-diagram svg text {font:10px Arial;}
 .build-missing-cut {font-weight:bold;border:2px solid black;}
 @media(max-width:650px){#buildPicture {height:245px;} .build-slab-picture img{height:235px;} .build-main {grid-template-columns:43% minmax(0,1fr);gap:10px;} .build-key-specs,.build-key-specs > div:first-child{font-size:14px;}}
+
+.build-review-details > summary { cursor:pointer; padding:14px; font-weight:bold; border:1px solid #bbc8d3; border-radius:6px; margin:12px 0; }
+.build-print-help { font-size:14px; line-height:1.5; }

@@ -22,16 +22,23 @@ const root=path.resolve(__dirname,'..');
    writeSavedDoorOrders([order]);return JSON.stringify(order);
   });
   const builderBefore=await page.evaluate(()=>JSON.stringify(captureQuoteState().values));
-  await page.locator('#buildLink').click();await page.locator('#buildOrderSelect').selectOption('review-order');
+  await page.locator('#buildLink').click();await page.locator('#buildOrderSelect').selectOption('review-order');await page.locator('.build-review-details').evaluate(el=>el.open=true);
   const form=page.locator('.build-review-form');
   assert.equal(await form.locator('[name=panel]').inputValue(),'');
   assert.match(await form.locator('.build-review-row.build-conflict').first().textContent(),/Camber Top.*Steel 6 Panel/s);
   assert.equal(await page.locator('#buildPicture img').count(),0);
   assert.match(await page.locator('.build-review-status').textContent(),/DRAFT/);
+  await page.locator('.build-review-details').evaluate(el=>el.open=false);
+  assert.equal(await form.isVisible(),false);
+  assert.equal(await page.locator('[data-prepare]').isVisible(),true);
+  await page.locator('[data-prepare]').click();await page.locator('[data-save]').waitFor({state:'visible'});
+  assert.match(await page.locator('#buildPdfActions [role=status]').textContent(),/Ready/);
+  const draftPath=path.join(root,'test-results','incomplete-print.pdf');fs.mkdirSync(path.dirname(draftPath),{recursive:true});
+  const incompleteDownload=page.waitForEvent('download');await page.locator('[data-save]').click();await (await incompleteDownload).saveAs(draftPath);
   await page.locator('[name=sillSize]').selectOption('4 13/16');await page.locator('[name=extensionSize]').selectOption('none');await page.locator('.build-settings-form button').click();
-  await form.locator('[name=panel]').selectOption('steel-6-panel');
-  await form.locator('[name=headerCutLength]').fill('32');await form.locator('[name=sillCutLength]').fill('32');await form.locator('[name=outsideFrameWidth]').fill('33 1/2');await form.locator('[name=outsideFrameHeight]').fill('81 7/8');await form.locator('[name=exteriorHingeSide]').selectOption('left');await form.locator('[name=glassRequirement]').selectOption('none');await form.locator('[name=checked]').check();
-  await form.locator('button[type=submit]').click();
+  await page.locator('.build-review-details').evaluate(el=>el.open=true);await form.locator('[name=panel]').selectOption('steel-6-panel');
+  await page.locator('.build-review-details').evaluate(el=>el.open=true);await form.locator('[name=headerCutLength]').fill('32');await form.locator('[name=sillCutLength]').fill('32');await form.locator('[name=outsideFrameWidth]').fill('33 1/2');await form.locator('[name=outsideFrameHeight]').fill('81 7/8');await form.locator('[name=exteriorHingeSide]').selectOption('left');await form.locator('[name=glassRequirement]').selectOption('none');await form.locator('[name=checked]').check();
+  await page.locator('.build-review-details').evaluate(el=>el.open=true);await form.locator('button[type=submit]').click();
   assert.match(await page.locator('.build-review-status').textContent(),/^CONFIRMED/);
   assert.match(await page.locator('#buildPicture img').getAttribute('src'),/steel-panels\/6-panel.png/);
   assert.equal(await page.evaluate(()=>JSON.stringify(captureQuoteState().values)),builderBefore,'Build must not modify the builder');
@@ -59,9 +66,10 @@ const root=path.resolve(__dirname,'..');
   }
   await page.evaluate(()=>{const o=readSavedDoorOrders()[0];o.buildSnapshot.text.exteriorHingeSide='left';o.buildSnapshot.checks['swing-out']=false;o.buildSnapshot.checks['swing-in']=true;o.buildRequirements={sillSize:'4 13/16',extensionSize:'none'};writeSavedDoorOrders([o]);renderBuildSheet();});
   // Editing any review field invalidates existing downloadable output.
-  await form.locator('[name=headerCutLength]').fill('33');assert.equal(await page.locator('.build-pdf-ready').isVisible(),false);
-  await page.locator('[data-prepare]').click();assert.match(await page.locator('#buildPdfActions [role=status]').textContent(),/Confirm your edited/);
-  await page.reload();await page.locator('#buildLink').click();await page.locator('#buildOrderSelect').selectOption('review-order');
+  await page.locator('.build-review-details').evaluate(el=>el.open=true);await form.locator('[name=headerCutLength]').fill('33');assert.equal(await page.locator('.build-pdf-ready').isVisible(),false);
+  await page.locator('[data-prepare]').click();await page.locator('[data-save]').waitFor({state:'visible'});assert.match(await page.locator('#buildPdfActions [role=status]').textContent(),/DRAFT: unsaved edits are not included/);
+  const unsavedDownload=page.waitForEvent('download');await page.locator('[data-save]').click();await (await unsavedDownload).saveAs(path.join(output,'unsaved-print.pdf'));
+  await page.reload();await page.locator('#buildLink').click();await page.locator('#buildOrderSelect').selectOption('review-order');await page.locator('.build-review-details').evaluate(el=>el.open=true);
   assert.match(await page.locator('.build-review-status').textContent(),/^CONFIRMED/);
   // Source change leaves last confirmed picture and text intact, but requires review.
   await page.evaluate(()=>{const q=readSavedQuotes()[0];q.values.panelStyle='steel-flush';writeSavedQuotes([q]);renderBuildSheet();});
@@ -74,7 +82,7 @@ const root=path.resolve(__dirname,'..');
   await page.evaluate(()=>{const o=readSavedDoorOrders()[0];delete o.buildSnapshot;o.sourceQuoteId='missing';o.checks['width-34']=true;delete o.checks['type-steel-polytex'];o.text.slabPanel='Unlisted custom slab';writeSavedDoorOrders([o]);renderBuildSheet();});
   assert.equal(await form.locator('[name=material]').inputValue(),'');assert.equal(await form.locator('[name=width]').inputValue(),'');assert.equal(await form.locator('[name=panel]').inputValue(),'');
   assert.equal(await page.locator('#buildPicture img').count(),0);
-  await form.locator('[name=panel]').selectOption('steel-6-panel');await form.locator('[name=material]').selectOption('type-fiberglass-smooth');await form.locator('[name=width]').selectOption('width-32');await form.locator('[name=headerCutLength]').fill('32');await form.locator('[name=sillCutLength]').fill('32');await form.locator('[name=outsideFrameWidth]').fill('33 1/2');await form.locator('[name=outsideFrameHeight]').fill('81 7/8');await form.locator('[name=exteriorHingeSide]').selectOption('left');await form.locator('[name=glassRequirement]').selectOption('none');await form.locator('[name=checked]').check();await form.locator('button').click();
+  await page.locator('.build-review-details').evaluate(el=>el.open=true);await form.locator('[name=panel]').selectOption('steel-6-panel');await form.locator('[name=material]').selectOption('type-fiberglass-smooth');await form.locator('[name=width]').selectOption('width-32');await form.locator('[name=headerCutLength]').fill('32');await form.locator('[name=sillCutLength]').fill('32');await form.locator('[name=outsideFrameWidth]').fill('33 1/2');await form.locator('[name=outsideFrameHeight]').fill('81 7/8');await form.locator('[name=exteriorHingeSide]').selectOption('left');await form.locator('[name=glassRequirement]').selectOption('none');await form.locator('[name=checked]').check();await form.locator('button').click();
   assert.match(await form.locator('[role=status]').textContent(),/picture and material do not match/);
   // Pure comparison checks for handwritten descriptions, hardware and unknown quote fields.
   const comparisons=await page.evaluate(()=>{
@@ -86,10 +94,10 @@ const root=path.resolve(__dirname,'..');
   });
   assert.equal(comparisons.panel,'steel-6-panel');assert.equal(comparisons.boreConflict,true);assert.equal(comparisons.hasDefaultHand,false);assert.deepEqual(comparisons.sizeChecks,[false,false,false,false,true,true]);
   // A custom slab can be confirmed without inventing a picture; simulate failed shared sync.
-  await form.locator('[name=panel]').selectOption('custom');await form.locator('[name=customPanel]').fill('Custom six-panel fibreglass slab');await form.locator('[name=width]').selectOption('width-custom');await form.locator('[name=doorCustomSize]').fill('33 x 79');
-  await form.locator('[name=headerCutLength]').fill('33');await form.locator('[name=sillCutLength]').fill('33');
+  await page.locator('.build-review-details').evaluate(el=>el.open=true);await form.locator('[name=panel]').selectOption('custom');await form.locator('[name=customPanel]').fill('Custom six-panel fibreglass slab');await form.locator('[name=width]').selectOption('width-custom');await form.locator('[name=doorCustomSize]').fill('33 x 79');
+  await page.locator('.build-review-details').evaluate(el=>el.open=true);await form.locator('[name=headerCutLength]').fill('33');await form.locator('[name=sillCutLength]').fill('33');
   await page.evaluate(()=>{sharedStorageEnabled=()=>true;sharedStorageRequest=async()=>{throw Error('Synthetic offline test');};});
-  await form.locator('button').click();assert.match(await form.locator('[role=status]').textContent(),/Sync failed/);assert.match(await page.locator('.build-review-status').textContent(),/^CONFIRMED/);assert.equal(await page.locator('#buildPicture img').count(),0);assert.match(await page.locator('.build-key-specs').textContent(),/33 x 79/);
+  await page.locator('.build-review-details').evaluate(el=>el.open=true);await form.locator('button').click();assert.match(await form.locator('[role=status]').textContent(),/Sync failed/);assert.match(await page.locator('.build-review-status').textContent(),/^CONFIRMED/);assert.equal(await page.locator('#buildPicture img').count(),0);assert.match(await page.locator('.build-key-specs').textContent(),/33 x 79/);
   // Copying an order must not carry factory approval forward.
   await page.evaluate(async()=>{sharedStorageEnabled=()=>false;generateDoorPurchaseOrderNumber=async()=>999;await copyDoorOrder('review-order');});
   assert.equal(await page.evaluate(()=>!!readSavedDoorOrders().find(o=>o.id!=='review-order').buildSnapshot),false);
